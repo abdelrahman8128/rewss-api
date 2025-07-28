@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 require("./config/dotenv.config"); // Load environment variables
+require("./config/mongodb.config"); // Connect to the database
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 // Middleware

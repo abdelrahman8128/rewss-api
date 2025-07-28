@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 
 import './config/dotenv.config'; // Load environment variables
-
+import './config/mongodb.config'; // Connect to the database
 
 const app = express();
 const PORT = process.env.PORT || 3000;
