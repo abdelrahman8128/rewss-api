@@ -11,9 +11,6 @@ import {
 } from "class-validator";
 
 export class registerDto {
-  @IsString()
-  public username: string;
-
   @IsNotEmpty()
   @IsString()
   public name: string;
@@ -30,7 +27,7 @@ export class registerDto {
   // })
   public password: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   public phoneNumber?: string;
 

@@ -13,11 +13,11 @@ const registerController = async (req, res) => {
         var existingUser;
         existingUser = await user_schema_1.default.findOne({ email });
         if (existingUser) {
-            return res.status(409).json({ message: "User already exists" });
+            return res.status(409).json({ message: "this email already exists", existingUser });
         }
         existingUser = await user_schema_1.default.findOne({ phoneNumber: phone });
         if (existingUser) {
-            return res.status(409).json({ message: "User already exists" });
+            return res.status(409).json({ message: "this phone number already exists", existingUser });
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const now = new Date();

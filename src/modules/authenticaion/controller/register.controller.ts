@@ -15,13 +15,13 @@ export const registerController = async (req: Request, res: Response) => {
     existingUser = await users.findOne({ email });
 
     if (existingUser) {
-      return res.status(409).json({ message: "User already exists" });
+      return res.status(409).json({ message: "this email already exists", existingUser });
     }
 
     existingUser = await users.findOne({ phoneNumber: phone });
 
     if (existingUser) {
-      return res.status(409).json({ message: "User already exists" });
+      return res.status(409).json({ message: "this phone number already exists" ,existingUser});
     }
 
     // Hash password
