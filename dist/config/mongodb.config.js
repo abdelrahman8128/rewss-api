@@ -21,7 +21,5 @@ mongoose_1.default.connection.on("disconnected", () => {
 mongoose_1.default.connection.on("error", (err) => {
     console.error("MongoDB connection error:", err);
 });
-// Connect automatically when this module is imported
 connectToMongoDB();
-// Export the connection for potential use elsewhere
 exports.default = mongoose_1.default.connection;
