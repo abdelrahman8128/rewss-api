@@ -9,15 +9,15 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_schema_1 = __importDefault(require("../../../Schema/User/user.schema"));
 const registerController = async (req, res) => {
     try {
-        const { email, phone, password, name } = req.body;
+        const { email, phoneNumber, password, name } = req.body;
         var existingUser;
         existingUser = await user_schema_1.default.findOne({ email });
         if (existingUser) {
-            return res.status(409).json({ message: "this email already exists", existingUser });
+            return res.status(409).json({ message: "this email already exists", });
         }
-        existingUser = await user_schema_1.default.findOne({ phoneNumber: phone });
+        existingUser = await user_schema_1.default.findOne({ phoneNumber: phoneNumber });
         if (existingUser) {
-            return res.status(409).json({ message: "this phone number already exists", existingUser });
+            return res.status(409).json({ message: "this phone number already exists", });
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const now = new Date();
@@ -30,7 +30,7 @@ const registerController = async (req, res) => {
             usernameExists = await user_schema_1.default.findOne({ username });
         }
         const newUser = await user_schema_1.default.create({
-            phoneNumber: phone,
+            phoneNumber: phoneNumber,
             username,
             email,
             name,

@@ -6,7 +6,7 @@ import users from "../../../Schema/User/user.schema";
 
 export const registerController = async (req: Request, res: Response) => {
   try {
-    const { email, phone, password, name } = req.body;
+    const { email, phoneNumber, password, name } = req.body;
 
     
    
@@ -15,13 +15,13 @@ export const registerController = async (req: Request, res: Response) => {
     existingUser = await users.findOne({ email });
 
     if (existingUser) {
-      return res.status(409).json({ message: "this email already exists", existingUser });
+      return res.status(409).json({ message: "this email already exists",});
     }
 
-    existingUser = await users.findOne({ phoneNumber: phone });
+    existingUser = await users.findOne({ phoneNumber: phoneNumber });
 
     if (existingUser) {
-      return res.status(409).json({ message: "this phone number already exists" ,existingUser});
+      return res.status(409).json({ message: "this phone number already exists" ,});
     }
 
     // Hash password
@@ -42,7 +42,7 @@ export const registerController = async (req: Request, res: Response) => {
     }
 
     const newUser = await users.create({
-      phoneNumber: phone,
+      phoneNumber: phoneNumber,
       username,
       email,
       name,
