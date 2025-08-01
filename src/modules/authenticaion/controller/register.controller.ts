@@ -8,8 +8,6 @@ export const registerController = async (req: Request, res: Response) => {
   try {
     const { email, phoneNumber, password, name } = req.body;
 
-    
-   
     var existingUser;
 
     existingUser = await users.findOne({ email });
