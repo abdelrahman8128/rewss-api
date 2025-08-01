@@ -9,4 +9,5 @@ const Register_dto_1 = require("./DTO/Register.dto");
 const validation_middleware_1 = require("../../Middleware/validation/validation.middleware");
 const router = express_1.default.Router();
 router.post("/register", (0, validation_middleware_1.validationMiddleware)(Register_dto_1.registerDto), auth_controller_1.registerController);
+router.post("/login", auth_controller_1.loginController);
 exports.default = router;

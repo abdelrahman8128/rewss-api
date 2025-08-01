@@ -36,8 +36,8 @@ const registerController = async (req, res) => {
             name,
             password: hashedPassword,
         });
-        const token = jsonwebtoken_1.default.sign({ id: newUser._id, email: newUser.email }, process.env.JWT_SECRET || "secret", {
-            expiresIn: "1h",
+        const token = jsonwebtoken_1.default.sign({ id: newUser._id, username: newUser.username, }, process.env.JWT_SECRET || "secret", {
+            expiresIn: process.env.JWT_EXPIRATION || "1h",
         });
         res.status(201).json({
             message: "User created successfully",

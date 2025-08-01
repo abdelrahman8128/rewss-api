@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 
 import users from "../../../Schema/User/user.schema";
 
@@ -49,11 +49,11 @@ export const registerController = async (req: Request, res: Response) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
+      { id: newUser._id, username: newUser.username,  },
       process.env.JWT_SECRET || "secret",
       {
-        expiresIn: "1h",
-      }
+        expiresIn: process.env.JWT_EXPIRATION || "1h",
+      } as SignOptions
     );
 
     res.status(201).json({
