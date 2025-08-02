@@ -14,25 +14,17 @@ export const requestOtpController = async (req: Request, res: Response) => {
         .json({ message: "Email or phone number is required" });
     }
 
-    if (email) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
-
-    if (phoneNumber) {
-      return res.status(400).json({ message: "Invalid phone number format" });
-    }
-
     // Generate a random 6-digit OTP
     const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Hash the OTP before storing in the database
-    // In a real implementation, you should use bcrypt or a similar library
+
+    console.log("Generated OTP:", plainOtpCode); 
     const hashedOtp = crypto
       .createHash("sha256")
       .update(plainOtpCode)
       .digest("hex");
 
-      
     // Store the hashed OTP in the database
     await Otp.create({
       phoneNumber,

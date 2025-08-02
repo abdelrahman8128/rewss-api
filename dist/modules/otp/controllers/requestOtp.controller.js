@@ -14,13 +14,8 @@ const requestOtpController = async (req, res) => {
                 .status(409)
                 .json({ message: "Email or phone number is required" });
         }
-        if (email) {
-            return res.status(400).json({ message: "Invalid email format" });
-        }
-        if (phoneNumber) {
-            return res.status(400).json({ message: "Invalid phone number format" });
-        }
         const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        console.log("Generated OTP:", plainOtpCode);
         const hashedOtp = crypto
             .createHash("sha256")
             .update(plainOtpCode)
