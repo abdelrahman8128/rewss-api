@@ -14,6 +14,7 @@ export const requestOtpController = async (req: Request, res: Response) => {
         .json({ message: "Email or phone number is required" });
     }
 
+    
     // Generate a random 6-digit OTP
     const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 

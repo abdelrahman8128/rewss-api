@@ -16,7 +16,7 @@ const authMiddleware = async (req, res, next) => {
         }
         const tokenString = Array.isArray(token) ? token[0] : token;
         const decoded = jsonwebtoken_1.default.verify(tokenString, process.env.JWT_SECRET || "default_secret");
-        const user = await user_schema_1.default.findById(decoded.userId);
+        const user = await user_schema_1.default.findById(decoded.id);
         if (!user) {
             return res.status(401).json({ message: "User not found" });
         }
@@ -38,16 +38,37 @@ const authMiddleware = async (req, res, next) => {
 };
 exports.authMiddleware = authMiddleware;
 const authorize = (roles) => {
-    return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({ message: "User not authenticated" });
+    return async (req, res, next) => {
+        try {
+            if (!req.user) {
+                await new Promise((resolve, reject) => {
+                    (0, exports.authMiddleware)(req, res, (err) => {
+                        if (err)
+                            reject(err);
+                        else
+                            resolve();
+                    });
+                });
+                if (res.headersSent) {
+                    return;
+                }
+            }
+            if (!roles.includes(req.user.role)) {
+                return res
+                    .status(403)
+                    .json({ message: "Access forbidden: Insufficient permissions" });
+            }
+            next();
         }
-        if (!roles.includes(req.user.role)) {
-            return res
-                .status(403)
-                .json({ message: "Access forbidden: Insufficient permissions" });
+        catch (error) {
+            if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+                return res.status(401).json({ message: "Invalid token" });
+            }
+            if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+                return res.status(401).json({ message: "Token expired" });
+            }
+            return res.status(500).json({ message: "Internal server error" });
         }
-        next();
         return;
     };
 };

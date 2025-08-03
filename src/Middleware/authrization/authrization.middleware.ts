@@ -2,12 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import User from "../../Schema/User/user.schema"; // Assuming you have a User schema
 
-interface DecodedToken {
-  userId: string;
-  role: string;
-  iat: number;
-  exp: number;
-}
 
 export const authMiddleware = async (
   req: Request,
@@ -32,9 +26,9 @@ export const authMiddleware = async (
     const decoded = jwt.verify(
       tokenString,
       process.env.JWT_SECRET || "default_secret"
-    ) as unknown as DecodedToken;
+    ) as any;
 
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.id );
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
@@ -61,18 +55,41 @@ export const authMiddleware = async (
 
 // Optional: Role-based authorization middleware
 export const authorize = (roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "User not authenticated" });
-    }
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Apply authentication middleware first
+      // Apply authentication middleware first
+      if (!req.user) {
+        await new Promise<void>((resolve, reject) => {
+          authMiddleware(req, res, (err?: any) => {
+        if (err) reject(err);
+        else resolve();
+          });
+        });
+        
+        // If authMiddleware sets res.headersSent, it means it sent an error response
+        if (res.headersSent) {
+          return;
+        }
+      }
 
-    if (!roles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: "Access forbidden: Insufficient permissions" });
-    }
+      // Now check for role authorization
+      if (!roles.includes(req.user.role)) {
+        return res
+          .status(403)
+          .json({ message: "Access forbidden: Insufficient permissions" });
+      }
 
-    next();
+      next();
+    } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({ message: "Token expired" });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
     return;
   };
 };
@@ -81,9 +98,7 @@ export const authorize = (roles: string[]) => {
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        role: string;
-      };
+      user?: any;
     }
   }
 }
