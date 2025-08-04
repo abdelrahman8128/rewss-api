@@ -10,15 +10,16 @@ const user_schema_1 = __importDefault(require("../../../Schema/User/user.schema"
 const crypto = require("crypto");
 exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        const { phoneNumber, otpCode } = req.body;
-        if (!phoneNumber || !otpCode) {
+        const { phoneNumber, email, otpCode } = req.body;
+        if ((!phoneNumber && !email) || !otpCode) {
             res
                 .status(400)
-                .json({ message: "Phone number and OTP code are required" });
+                .json({ message: "Phone number or email and OTP code are required" });
             return;
         }
         const otpRecord = await otp_schema_1.default.findOne({
-            phoneNumber,
+            phoneNumber: phoneNumber ? phoneNumber : "",
+            email: email ? email : "",
             isVerified: false,
             expiresAt: { $gt: new Date() },
             userId: req.user.id,
@@ -49,7 +50,14 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
         }
         otpRecord.isVerified = true;
         await otpRecord.save();
-        await user_schema_1.default.updateOne({ id: otpRecord.userId }, { $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber } });
+        if (otpRecord.otpType === "phone") {
+            await user_schema_1.default.updateOne({ _id: otpRecord.userId }, {
+                $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber },
+            });
+        }
+        else if (otpRecord.otpType === "email") {
+            await user_schema_1.default.updateOne({ _id: otpRecord.userId }, { $set: { isEmailVerified: true, email: otpRecord.email } });
+        }
         res.status(200).json({ message: "OTP verified successfully" });
     }
     catch (error) {

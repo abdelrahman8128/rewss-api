@@ -7,19 +7,20 @@ const crypto = require("crypto");
 export const verifyOtpController = asyncHandler(
   async (req: Request, res: Response) => {
     try {
-      const { phoneNumber, otpCode } = req.body;
+      const { phoneNumber, email, otpCode } = req.body;
 
       // Validate phone number and OTP code
-      if (!phoneNumber || !otpCode) {
+      if ((!phoneNumber && !email) || !otpCode) {
         res
           .status(400)
-          .json({ message: "Phone number and OTP code are required" });
+          .json({ message: "Phone number or email and OTP code are required" });
         return;
       }
 
       // Find the OTP record in the database
       const otpRecord = await Otp.findOne({
-        phoneNumber,
+        phoneNumber: phoneNumber ? phoneNumber : "",
+        email: email ? email : "",
         isVerified: false,
         expiresAt: { $gt: new Date() },
         userId: req.user.id, // Assuming user ID is attached to req.user by authMiddleware
@@ -63,10 +64,21 @@ export const verifyOtpController = asyncHandler(
       otpRecord.isVerified = true;
       await otpRecord.save();
 
-      await User.updateOne(
-        { id: otpRecord.userId },
-        { $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber } }
-      );
+      if (otpRecord.otpType === "phone") {
+        // Update user phone verification status
+        await User.updateOne(
+          { _id: otpRecord.userId },
+          {
+            $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber },
+          }
+        );
+      } else if (otpRecord.otpType === "email") {
+        // Update user email verification status
+        await User.updateOne(
+          { _id: otpRecord.userId },
+          { $set: { isEmailVerified: true, email: otpRecord.email } }
+        );
+      }
 
       res.status(200).json({ message: "OTP verified successfully" });
     } catch (error) {

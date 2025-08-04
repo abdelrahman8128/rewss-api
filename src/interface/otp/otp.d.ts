@@ -1,11 +1,13 @@
 import { Document } from 'mongoose';
 
-export interface IPhoneOtp extends Document {
+export interface IOtp extends Document {
   phoneNumber: string;
   otpCode: string;
   expiresAt: Date;
   isVerified: boolean;
   createdAt: Date;
   attempts: number;
-  userId?: string; // لو هتربطها بالـ User
+  userId?: string; 
+  email?: string;
+  otpType: 'phone' | 'email';
 }

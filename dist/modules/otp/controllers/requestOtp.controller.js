@@ -21,7 +21,9 @@ const requestOtpController = async (req, res) => {
             .update(plainOtpCode)
             .digest("hex");
         await otp_schema_1.default.create({
-            phoneNumber,
+            phoneNumber: phoneNumber ? phoneNumber : "",
+            email: email ? email : "",
+            otpType: phoneNumber ? 'phone' : 'email',
             otpCode: hashedOtp,
             expiresAt: new Date(Date.now() + 10 * 60 * 1000),
             isVerified: false,

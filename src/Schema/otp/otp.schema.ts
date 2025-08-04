@@ -1,8 +1,10 @@
 import { Schema, model } from 'mongoose';
-import { IPhoneOtp } from '../../interface/otp/otp'; // لو في ملف منفصل
+import { IOtp } from '../../interface/otp/otp'; // لو في ملف منفصل
 
-const phoneOtpSchema = new Schema<IPhoneOtp>({
-  phoneNumber: { type: String, required: true },
+const OtpSchema = new Schema<IOtp>({
+  phoneNumber: { type: String, required: false },
+  email: { type: String, required: false },
+  otpType: { type: String, required: true, enum: ['phone', 'email'] },
   otpCode: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   isVerified: { type: Boolean, default: false },
@@ -11,4 +13,5 @@ const phoneOtpSchema = new Schema<IPhoneOtp>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
 });
 
-export default model<IPhoneOtp>('PhoneOtp', phoneOtpSchema);
+
+export default model<IOtp>('Otp', OtpSchema);

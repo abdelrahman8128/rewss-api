@@ -6,8 +6,12 @@ export interface IUser extends Document {
     phoneNumber?: string;
     phoneCode?: string;
     isPhoneVerified?: boolean;
+    isEmailVerified?: boolean;
     status: "active" | "inactive" | "pending" | "ban" | "deleted" | "blocked";
     role: "user" | "seller" | "admin" | "super"; // Assuming a role field is needed
     createdAt: Date;
     updatedAt: Date;
+
+    avatar?: string; // Optional avatar field
+
 }

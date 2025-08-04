@@ -26,9 +26,13 @@ export const requestOtpController = async (req: Request, res: Response) => {
       .update(plainOtpCode)
       .digest("hex");
 
+
+
     // Store the hashed OTP in the database
     await Otp.create({
-      phoneNumber,
+      phoneNumber: phoneNumber ? phoneNumber : "",
+      email: email ? email : "",
+      otpType: phoneNumber ? 'phone' : 'email',
       otpCode: hashedOtp,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
       isVerified: false,

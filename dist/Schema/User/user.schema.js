@@ -22,6 +22,7 @@ const UserSchema = new mongoose_1.Schema({
     phoneNumber: { type: String, required: false, unique: true, trim: true, index: true, },
     phoneCode: { type: String, required: false, trim: true },
     isPhoneVerified: { type: Boolean, default: false },
+    isEmailVerified: { type: Boolean, default: false },
     status: {
         type: String,
         enum: ["active", "inactive", "pending", "ban", "deleted", "blocked"],
@@ -31,6 +32,11 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         enum: ["user", "seller", "admin", "super"],
         default: "user",
+    },
+    avatar: {
+        type: String,
+        required: false,
+        default: "https://example.com/default-avatar.png",
     },
     createdAt: { type: Date, default: Date.now, index: true },
 }, {
