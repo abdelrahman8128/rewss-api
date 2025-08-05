@@ -5,7 +5,7 @@ const crypto = require("crypto");
 
 export const requestOtpController = async (req: Request, res: Response) => {
   try {
-    const { email, phoneNumber } = req.body;
+    const { email, phoneNumber, purpose } = req.body;
 
     // Validate email or phone number
     if (!email && !phoneNumber) {
@@ -14,30 +14,34 @@ export const requestOtpController = async (req: Request, res: Response) => {
         .json({ message: "Email or phone number is required" });
     }
 
-    
+    if (!purpose || !['registration', 'login', 'password_reset', 'verifying'].includes(purpose)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid purpose specified" });
+    }
+
     // Generate a random 6-digit OTP
     const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Hash the OTP before storing in the database
 
-    console.log("Generated OTP:", plainOtpCode); 
+    console.log("Generated OTP:", plainOtpCode);
     const hashedOtp = crypto
       .createHash("sha256")
       .update(plainOtpCode)
       .digest("hex");
 
-
-
     // Store the hashed OTP in the database
     await Otp.create({
       phoneNumber: phoneNumber ? phoneNumber : "",
       email: email ? email : "",
-      otpType: phoneNumber ? 'phone' : 'email',
+      otpType: phoneNumber ? "phone" : "email",
       otpCode: hashedOtp,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
       isVerified: false,
       attempts: 0,
       plainOtp: plainOtpCode, // Store temporarily for sending to user, remove in production or use a better approach
+      purpose: purpose,
     });
 
     // TODO: Send plainOtpCode to user via SMS or email

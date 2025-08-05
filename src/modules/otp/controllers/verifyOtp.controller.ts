@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import Otp from "../../../Schema/otp/otp.schema";
 import User from "../../../Schema/User/user.schema";
 const crypto = require("crypto");
+import ResetPasswordTicket  from "../../../Schema/ResetPasswordTicket/resetPasswordTicket.schema";
 
 export const verifyOtpController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -64,22 +65,32 @@ export const verifyOtpController = asyncHandler(
       otpRecord.isVerified = true;
       await otpRecord.save();
 
-      if (otpRecord.otpType === "phone") {
-        // Update user phone verification status
-        await User.updateOne(
-          { _id: otpRecord.userId },
-          {
-            $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber },
-          }
-        );
-      } else if (otpRecord.otpType === "email") {
-        // Update user email verification status
-        await User.updateOne(
-          { _id: otpRecord.userId },
-          { $set: { isEmailVerified: true, email: otpRecord.email } }
-        );
+      if (otpRecord.purpose === "verifying") {
+        if (otpRecord.otpType === "phone") {
+          // Update user phone verification status
+          await User.updateOne(
+            { _id: otpRecord.userId },
+            {
+              $set: {
+                isPhoneVerified: true,
+                phoneNumber: otpRecord.phoneNumber,
+              },
+            }
+          );
+        } else if (otpRecord.otpType === "email") {
+          // Update user email verification status
+          await User.updateOne(
+            { _id: otpRecord.userId },
+            { $set: { isEmailVerified: true, email: otpRecord.email } }
+          );
+        }
+      } else if (otpRecord.purpose === "password_reset") {
+        await ResetPasswordTicket.create({
+          userId: otpRecord.userId,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // Token valid for 15 minutes
+        });
       }
-
       res.status(200).json({ message: "OTP verified successfully" });
     } catch (error) {
       console.error(error);

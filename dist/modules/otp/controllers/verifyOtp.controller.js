@@ -8,6 +8,7 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const otp_schema_1 = __importDefault(require("../../../Schema/otp/otp.schema"));
 const user_schema_1 = __importDefault(require("../../../Schema/User/user.schema"));
 const crypto = require("crypto");
+const resetPasswordTicket_schema_1 = __importDefault(require("../../../Schema/ResetPasswordTicket/resetPasswordTicket.schema"));
 exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { phoneNumber, email, otpCode } = req.body;
@@ -50,13 +51,25 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
         }
         otpRecord.isVerified = true;
         await otpRecord.save();
-        if (otpRecord.otpType === "phone") {
-            await user_schema_1.default.updateOne({ _id: otpRecord.userId }, {
-                $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber },
-            });
+        if (otpRecord.purpose === "verifying") {
+            if (otpRecord.otpType === "phone") {
+                await user_schema_1.default.updateOne({ _id: otpRecord.userId }, {
+                    $set: {
+                        isPhoneVerified: true,
+                        phoneNumber: otpRecord.phoneNumber,
+                    },
+                });
+            }
+            else if (otpRecord.otpType === "email") {
+                await user_schema_1.default.updateOne({ _id: otpRecord.userId }, { $set: { isEmailVerified: true, email: otpRecord.email } });
+            }
         }
-        else if (otpRecord.otpType === "email") {
-            await user_schema_1.default.updateOne({ _id: otpRecord.userId }, { $set: { isEmailVerified: true, email: otpRecord.email } });
+        else if (otpRecord.purpose === "password_reset") {
+            await resetPasswordTicket_schema_1.default.create({
+                userId: otpRecord.userId,
+                createdAt: new Date(),
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+            });
         }
         res.status(200).json({ message: "OTP verified successfully" });
     }

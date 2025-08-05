@@ -8,11 +8,16 @@ const otp_schema_1 = __importDefault(require("../../../Schema/otp/otp.schema"));
 const crypto = require("crypto");
 const requestOtpController = async (req, res) => {
     try {
-        const { email, phoneNumber } = req.body;
+        const { email, phoneNumber, purpose } = req.body;
         if (!email && !phoneNumber) {
             return res
                 .status(409)
                 .json({ message: "Email or phone number is required" });
+        }
+        if (!purpose || !['registration', 'login', 'password_reset', 'verifying'].includes(purpose)) {
+            return res
+                .status(400)
+                .json({ message: "Invalid purpose specified" });
         }
         const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
         console.log("Generated OTP:", plainOtpCode);
@@ -23,12 +28,13 @@ const requestOtpController = async (req, res) => {
         await otp_schema_1.default.create({
             phoneNumber: phoneNumber ? phoneNumber : "",
             email: email ? email : "",
-            otpType: phoneNumber ? 'phone' : 'email',
+            otpType: phoneNumber ? "phone" : "email",
             otpCode: hashedOtp,
             expiresAt: new Date(Date.now() + 10 * 60 * 1000),
             isVerified: false,
             attempts: 0,
             plainOtp: plainOtpCode,
+            purpose: purpose,
         });
         return res.status(201).json({ message: "OTP sent successfully" });
     }
