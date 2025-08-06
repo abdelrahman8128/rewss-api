@@ -4,7 +4,7 @@ const mongoose_1 = require("mongoose");
 const resetPasswordTicketSchema = new mongoose_1.Schema({
     userId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: "User",
         required: true,
         index: true,
     },
@@ -24,4 +24,4 @@ const resetPasswordTicketSchema = new mongoose_1.Schema({
 resetPasswordTicketSchema.methods.isExpired = function () {
     return new Date() > this.expiresAt;
 };
-exports.default = (0, mongoose_1.model)('ResetPasswordTicket', resetPasswordTicketSchema);
+exports.default = (0, mongoose_1.model)("ResetPasswordTicket", resetPasswordTicketSchema);

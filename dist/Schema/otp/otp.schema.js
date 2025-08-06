@@ -11,6 +11,6 @@ const OtpSchema = new mongoose_1.Schema({
     createdAt: { type: Date, default: Date.now },
     attempts: { type: Number, default: 0 },
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: false },
-    purpose: { type: String, required: true, enum: ['registration', 'login', 'password_reset', 'verifying'] },
+    purpose: { type: String, required: true, enum: ['registration', 'login', 'verifying', 'password_reset'] },
 });
 exports.default = (0, mongoose_1.model)('Otp', OtpSchema);

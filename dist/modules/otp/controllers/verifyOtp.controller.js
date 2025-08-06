@@ -9,7 +9,8 @@ const otp_schema_1 = __importDefault(require("../../../Schema/otp/otp.schema"));
 const user_schema_1 = __importDefault(require("../../../Schema/User/user.schema"));
 const crypto = require("crypto");
 const resetPasswordTicket_schema_1 = __importDefault(require("../../../Schema/ResetPasswordTicket/resetPasswordTicket.schema"));
-exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, res) => {
+const authrization_middleware_1 = require("../../../Middleware/authrization/authrization.middleware");
+exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, res, next) => {
     try {
         const { phoneNumber, email, otpCode } = req.body;
         if ((!phoneNumber && !email) || !otpCode) {
@@ -23,11 +24,21 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
             email: email ? email : "",
             isVerified: false,
             expiresAt: { $gt: new Date() },
-            userId: req.user.id,
         });
         if (!otpRecord) {
             res.status(404).json({ message: "OTP not found or expired" });
             return;
+        }
+        if (otpRecord.purpose === "verifying") {
+            (0, authrization_middleware_1.authMiddleware)(req, res, next);
+            if (!req.user) {
+                res.status(401).json({ message: "Unauthorized" });
+                return;
+            }
+            if (otpRecord.userId.toString() !== req.user.id) {
+                res.status(403).json({ message: "Forbidden" });
+                return;
+            }
         }
         const hashedOtp = crypto
             .createHash("sha256")
@@ -43,10 +54,6 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
                 return;
             }
             res.status(400).json({ message: "Invalid OTP code" });
-            return;
-        }
-        if (new Date() > otpRecord.expiresAt) {
-            res.status(410).json({ message: "OTP has expired" });
             return;
         }
         otpRecord.isVerified = true;

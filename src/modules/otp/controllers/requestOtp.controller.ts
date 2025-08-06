@@ -1,9 +1,12 @@
-import { Request, Response } from "express";
+import { Request, Response,NextFunction } from "express";
 //import { OtpService } from '../services/otp.service';
 import Otp from "../../../Schema/otp/otp.schema"; // Assuming you have an OtpService to handle OTP logic
 const crypto = require("crypto");
+import User from "../../../Schema/User/user.schema";
+import {authMiddleware} from "../../../Middleware/authrization/authrization.middleware";
 
-export const requestOtpController = async (req: Request, res: Response) => {
+
+export const requestOtpController = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phoneNumber, purpose } = req.body;
 
@@ -18,6 +21,35 @@ export const requestOtpController = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({ message: "Invalid purpose specified" });
+    }
+
+    if (purpose === 'password_reset' ) {
+    
+      const user = await User.findOne({ email: email || null, phoneNumber: phoneNumber || null });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+    } else if (purpose === 'verifying') {
+      
+      authMiddleware(req, res, next);
+
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      // Check if the user already has an OTP record for verification
+      const existingOtp = await Otp.findOne({
+        userId: req.user.id,
+       
+        isVerified: false,
+        expiresAt: { $gt: new Date() },
+      });
+
+      if (existingOtp) {
+        return res.status(409).json({ message: "OTP already exists for this user" });
+      }
+
     }
 
     // Generate a random 6-digit OTP
@@ -40,8 +72,8 @@ export const requestOtpController = async (req: Request, res: Response) => {
       expiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
       isVerified: false,
       attempts: 0,
-      plainOtp: plainOtpCode, // Store temporarily for sending to user, remove in production or use a better approach
       purpose: purpose,
+      userId: purpose === 'verifying' ? req.user.id : null, // Link OTP to user if verifying
     });
 
     // TODO: Send plainOtpCode to user via SMS or email

@@ -27,7 +27,7 @@ const OtpSchema = new Schema<IOtp>({
   createdAt: { type: Date, default: Date.now },
   attempts: { type: Number, default: 0 },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
-  purpose: { type: String, required: true, enum: ['registration', 'login', 'password_reset', 'verifying'] },
+  purpose: { type: String, required: true, enum: ['registration', 'login', 'verifying', 'password_reset'] },
 
 });
 
