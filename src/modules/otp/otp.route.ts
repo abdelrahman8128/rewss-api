@@ -6,7 +6,7 @@ import {
 } from "../../Middleware/authrization/authrization.middleware";
 
 const router: Router = express.Router();
-router.post("/request-otp", authMiddleware, requestOtpController);
-router.post("/verify-otp", authMiddleware, verifyOtpController);
+router.post("/request-otp", requestOtpController);
+router.post("/verify-otp", verifyOtpController);
 
 export default router;

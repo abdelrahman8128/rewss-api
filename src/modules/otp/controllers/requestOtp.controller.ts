@@ -1,12 +1,15 @@
-import { Request, Response,NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 //import { OtpService } from '../services/otp.service';
 import Otp from "../../../Schema/otp/otp.schema"; // Assuming you have an OtpService to handle OTP logic
 const crypto = require("crypto");
 import User from "../../../Schema/User/user.schema";
-import {authMiddleware} from "../../../Middleware/authrization/authrization.middleware";
+import { authMiddleware } from "../../../Middleware/authrization/authrization.middleware";
 
-
-export const requestOtpController = async (req: Request, res: Response, next: NextFunction) => {
+export const requestOtpController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { email, phoneNumber, purpose } = req.body;
 
@@ -17,39 +20,47 @@ export const requestOtpController = async (req: Request, res: Response, next: Ne
         .json({ message: "Email or phone number is required" });
     }
 
-    if (!purpose || !['registration', 'login', 'password_reset', 'verifying'].includes(purpose)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid purpose specified" });
+    if (
+      !purpose ||
+      !["registration", "login", "password_reset", "verifying"].includes(
+        purpose
+      )
+    ) {
+      return res.status(400).json({ message: "Invalid purpose specified" });
     }
 
-    if (purpose === 'password_reset' ) {
-    
-      const user = await User.findOne({ email: email || null, phoneNumber: phoneNumber || null });
+    if (purpose === "password_reset") {
+      const query: { email?: string; phoneNumber?: string } = {};
+      if (email) query.email = email;
+      if (phoneNumber) query.phoneNumber = phoneNumber;
+
+      // Find user with the query
+      const user = await User.findOne(query);
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
-    } else if (purpose === 'verifying') {
-      
+      req.user = user; // Attach user to request for later use
+    } else if (purpose === "verifying") {
       authMiddleware(req, res, next);
 
       if (!req.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      
+
       // Check if the user already has an OTP record for verification
       const existingOtp = await Otp.findOne({
         userId: req.user.id,
-       
+
         isVerified: false,
         expiresAt: { $gt: new Date() },
       });
 
       if (existingOtp) {
-        return res.status(409).json({ message: "OTP already exists for this user" });
+        return res
+          .status(409)
+          .json({ message: "OTP already exists for this user" });
       }
-
     }
 
     // Generate a random 6-digit OTP
@@ -73,7 +84,7 @@ export const requestOtpController = async (req: Request, res: Response, next: Ne
       isVerified: false,
       attempts: 0,
       purpose: purpose,
-      userId: purpose === 'verifying' ? req.user.id : null, // Link OTP to user if verifying
+      userId: req.user.id,
     });
 
     // TODO: Send plainOtpCode to user via SMS or email
