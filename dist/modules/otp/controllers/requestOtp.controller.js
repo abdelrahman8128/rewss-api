@@ -33,19 +33,24 @@ const requestOtpController = async (req, res, next) => {
             req.user = user;
         }
         else if (purpose === "verifying") {
-            (0, authrization_middleware_1.authMiddleware)(req, res, next);
-            if (!req.user) {
-                return res.status(401).json({ message: "Unauthorized" });
+            try {
+                await (0, authrization_middleware_1.authMiddleware)(req, res, () => { });
+                if (!req.user) {
+                    return res.status(401).json({ message: "Unauthorized" });
+                }
+                const existingOtp = await otp_schema_1.default.findOne({
+                    userId: req.user.id,
+                    isVerified: false,
+                    expiresAt: { $gt: new Date() },
+                });
+                if (existingOtp) {
+                    return res
+                        .status(409)
+                        .json({ message: "OTP already exists for this user" });
+                }
             }
-            const existingOtp = await otp_schema_1.default.findOne({
-                userId: req.user.id,
-                isVerified: false,
-                expiresAt: { $gt: new Date() },
-            });
-            if (existingOtp) {
-                return res
-                    .status(409)
-                    .json({ message: "OTP already exists for this user" });
+            catch (err) {
+                return;
             }
         }
         const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();

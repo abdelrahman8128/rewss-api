@@ -42,24 +42,32 @@ export const requestOtpController = async (
       }
       req.user = user; // Attach user to request for later use
     } else if (purpose === "verifying") {
-      authMiddleware(req, res, next);
+      // Use a promise-based approach to handle the middleware
+      try {
+      
+         await  authMiddleware(req, res, () => {});
 
-      if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
 
-      // Check if the user already has an OTP record for verification
-      const existingOtp = await Otp.findOne({
-        userId: req.user.id,
+        // If middleware passes but no user is set, return error
+        if (!req.user) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
 
-        isVerified: false,
-        expiresAt: { $gt: new Date() },
-      });
+        // Check if the user already has an OTP record for verification
+        const existingOtp = await Otp.findOne({
+          userId: req.user.id,
+          isVerified: false,
+          expiresAt: { $gt: new Date() },
+        });
 
-      if (existingOtp) {
-        return res
-          .status(409)
-          .json({ message: "OTP already exists for this user" });
+        if (existingOtp) {
+          return res
+            .status(409)
+            .json({ message: "OTP already exists for this user" });
+        }
+      } catch (err) {
+        // The middleware already sent a response
+        return;
       }
     }
 

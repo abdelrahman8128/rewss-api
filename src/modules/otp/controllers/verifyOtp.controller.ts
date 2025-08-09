@@ -85,17 +85,39 @@ export const verifyOtpController = asyncHandler(
 
         
         if (otpRecord.otpType === "phone") {
+          // Check if phone number is already used by another user
+          const existingUserWithPhone = await User.findOne({
+            phoneNumber: otpRecord.phoneNumber,
+            _id: { $ne: otpRecord.userId }
+          });
+          
+          if (existingUserWithPhone) {
+            res.status(409).json({ message: "Phone number is already in use by another account" });
+            return;
+          }
+          
           // Update user phone verification status
           await User.updateOne(
             { _id: otpRecord.userId },
             {
               $set: {
-                isPhoneVerified: true,
-                phoneNumber: otpRecord.phoneNumber,
+          isPhoneVerified: true,
+          phoneNumber: otpRecord.phoneNumber,
               },
             }
           );
         } else if (otpRecord.otpType === "email") {
+          // Check if email is already used by another user
+          const existingUserWithEmail = await User.findOne({
+            email: otpRecord.email,
+            _id: { $ne: otpRecord.userId }
+          });
+          
+          if (existingUserWithEmail) {
+            res.status(409).json({ message: "Email is already in use by another account" });
+            return;
+          }
+          
           // Update user email verification status
           await User.updateOne(
             { _id: otpRecord.userId },
