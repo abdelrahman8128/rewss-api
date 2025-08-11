@@ -85,7 +85,7 @@ export const requestOtpController = async (
       phoneNumber: phoneNumber ? phoneNumber : "",
       email: email ? email : "",
       otpType: phoneNumber ? "phone" : "email",
-      otpCode: "00000", //hashedOtp,
+      otpCode: "000000", //hashedOtp,
       expiresAt: new Date(Date.now() + 0.15 * 60 * 1000), // OTP valid for 10 minutes
       isVerified: false,
       attempts: 0,

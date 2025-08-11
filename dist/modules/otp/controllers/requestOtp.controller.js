@@ -63,7 +63,7 @@ const requestOtpController = async (req, res, next) => {
             phoneNumber: phoneNumber ? phoneNumber : "",
             email: email ? email : "",
             otpType: phoneNumber ? "phone" : "email",
-            otpCode: "00000",
+            otpCode: "000000",
             expiresAt: new Date(Date.now() + 0.15 * 60 * 1000),
             isVerified: false,
             attempts: 0,
