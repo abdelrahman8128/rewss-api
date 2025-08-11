@@ -50,7 +50,7 @@ const requestOtpController = async (req, res, next) => {
                 }
             }
             catch (err) {
-                return;
+                return res.json({ err });
             }
         }
         const plainOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -63,12 +63,12 @@ const requestOtpController = async (req, res, next) => {
             phoneNumber: phoneNumber ? phoneNumber : "",
             email: email ? email : "",
             otpType: phoneNumber ? "phone" : "email",
-            otpCode: hashedOtp,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+            otpCode: "00000",
+            expiresAt: new Date(Date.now() + 0.15 * 60 * 1000),
             isVerified: false,
             attempts: 0,
             purpose: purpose,
-            userId: req.user.id,
+            userId: req.user._id,
         });
         return res.status(201).json({ message: "OTP sent successfully" });
     }

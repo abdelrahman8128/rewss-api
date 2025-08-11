@@ -1,0 +1,1 @@
+export {createBrand} from './controllers/create.brand.controller';

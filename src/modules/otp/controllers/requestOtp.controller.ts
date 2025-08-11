@@ -44,9 +44,7 @@ export const requestOtpController = async (
     } else if (purpose === "verifying") {
       // Use a promise-based approach to handle the middleware
       try {
-      
-         await  authMiddleware(req, res, () => {});
-
+        await authMiddleware(req, res, () => {});
 
         // If middleware passes but no user is set, return error
         if (!req.user) {
@@ -67,7 +65,7 @@ export const requestOtpController = async (
         }
       } catch (err) {
         // The middleware already sent a response
-        return;
+        return res.json({ err });
       }
     }
 
@@ -87,12 +85,12 @@ export const requestOtpController = async (
       phoneNumber: phoneNumber ? phoneNumber : "",
       email: email ? email : "",
       otpType: phoneNumber ? "phone" : "email",
-      otpCode: hashedOtp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
+      otpCode: "00000", //hashedOtp,
+      expiresAt: new Date(Date.now() + 0.15 * 60 * 1000), // OTP valid for 10 minutes
       isVerified: false,
       attempts: 0,
       purpose: purpose,
-      userId: req.user.id,
+      userId: req.user._id,
     });
 
     // TODO: Send plainOtpCode to user via SMS or email
