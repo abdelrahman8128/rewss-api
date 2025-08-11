@@ -1,12 +1,15 @@
 import asyncHandler from "express-async-handler";
-import { Request, Response } from "express";
+import { Request, Response ,NextFunction} from "express";
 import Otp from "../../../Schema/otp/otp.schema";
 import User from "../../../Schema/User/user.schema";
 const crypto = require("crypto");
+import ResetPasswordTicket  from "../../../Schema/ResetPasswordTicket/resetPasswordTicket.schema";
+import {authMiddleware} from "../../../Middleware/authrization/authrization.middleware";
 
 export const verifyOtpController = asyncHandler(
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+
       const { phoneNumber, email, otpCode } = req.body;
 
       // Validate phone number and OTP code
@@ -23,12 +26,29 @@ export const verifyOtpController = asyncHandler(
         email: email ? email : "",
         isVerified: false,
         expiresAt: { $gt: new Date() },
-        userId: req.user.id, // Assuming user ID is attached to req.user by authMiddleware
+
       });
+
+      
 
       if (!otpRecord) {
         res.status(404).json({ message: "OTP not found or expired" });
         return;
+      }
+      if (otpRecord.purpose === "verifying") {
+       
+              authMiddleware(req, res, next);
+        if (!req.user) {
+          res.status(401).json({ message: "Unauthorized" });
+          return;
+        }
+
+        // Check if the OTP belongs to the authenticated user
+        if (otpRecord.userId!.toString() !== req.user.id) {
+          res.status(403).json({ message: "Forbidden" });
+          return;
+        }
+        
       }
 
       // Hash the provided OTP code for comparison
@@ -54,32 +74,63 @@ export const verifyOtpController = asyncHandler(
         return;
       }
 
-      // Check if the OTP has expired
-      if (new Date() > otpRecord.expiresAt) {
-        res.status(410).json({ message: "OTP has expired" });
-        return;
-      }
+      
 
       // Mark the OTP as verified
       otpRecord.isVerified = true;
       await otpRecord.save();
 
-      if (otpRecord.otpType === "phone") {
-        // Update user phone verification status
-        await User.updateOne(
-          { _id: otpRecord.userId },
-          {
-            $set: { isPhoneVerified: true, phoneNumber: otpRecord.phoneNumber },
-          }
-        );
-      } else if (otpRecord.otpType === "email") {
-        // Update user email verification status
-        await User.updateOne(
-          { _id: otpRecord.userId },
-          { $set: { isEmailVerified: true, email: otpRecord.email } }
-        );
-      }
+      if (otpRecord.purpose === "verifying") {
 
+
+        
+        if (otpRecord.otpType === "phone") {
+          // Check if phone number is already used by another user
+          const existingUserWithPhone = await User.findOne({
+            phoneNumber: otpRecord.phoneNumber,
+            _id: { $ne: otpRecord.userId }
+          });
+          
+          if (existingUserWithPhone) {
+            res.status(409).json({ message: "Phone number is already in use by another account" });
+            return;
+          }
+          
+          // Update user phone verification status
+          await User.updateOne(
+            { _id: otpRecord.userId },
+            {
+              $set: {
+          isPhoneVerified: true,
+          phoneNumber: otpRecord.phoneNumber,
+              },
+            }
+          );
+        } else if (otpRecord.otpType === "email") {
+          // Check if email is already used by another user
+          const existingUserWithEmail = await User.findOne({
+            email: otpRecord.email,
+            _id: { $ne: otpRecord.userId }
+          });
+          
+          if (existingUserWithEmail) {
+            res.status(409).json({ message: "Email is already in use by another account" });
+            return;
+          }
+          
+          // Update user email verification status
+          await User.updateOne(
+            { _id: otpRecord.userId },
+            { $set: { isEmailVerified: true, email: otpRecord.email } }
+          );
+        }
+      } else if (otpRecord.purpose === "password_reset") {
+        await ResetPasswordTicket.create({
+          userId: otpRecord.userId,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // Token valid for 15 minutes
+        });
+      }
       res.status(200).json({ message: "OTP verified successfully" });
     } catch (error) {
       console.error(error);
