@@ -1,4 +1,4 @@
 {
-  "editor.inlineSuggest.edits.codeShifting": false,
-  "editor.inlineSuggest.edits.renderSideBySide": "never"
+  "editor.inlineSuggest.edits.renderSideBySide": "never",
+  "editor.inlineSuggest.edits.allowCodeShifting": "never"
 }
