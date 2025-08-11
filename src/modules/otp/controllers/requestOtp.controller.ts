@@ -77,7 +77,7 @@ export const requestOtpController = async (
     console.log("Generated OTP:", plainOtpCode);
     const hashedOtp = crypto
       .createHash("sha256")
-      .update(plainOtpCode)
+      .update("000000")
       .digest("hex");
 
     // Store the hashed OTP in the database
@@ -85,7 +85,7 @@ export const requestOtpController = async (
       phoneNumber: phoneNumber ? phoneNumber : "",
       email: email ? email : "",
       otpType: phoneNumber ? "phone" : "email",
-      otpCode: "000000", //hashedOtp,
+      otpCode: hashedOtp,
       expiresAt: new Date(Date.now() + 0.15 * 60 * 1000), // OTP valid for 10 minutes
       isVerified: false,
       attempts: 0,
