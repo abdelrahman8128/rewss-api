@@ -14,8 +14,7 @@ class BrandService {
             throw new Error("Brand already exists");
         return await brand_schema_1.default.create({
             name,
-            country: data.country.trim(),
-            logo: data.logo.trim(),
+            logo: "",
         });
     }
     async getById(id) {

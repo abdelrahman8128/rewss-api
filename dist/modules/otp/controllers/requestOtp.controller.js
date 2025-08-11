@@ -57,13 +57,13 @@ const requestOtpController = async (req, res, next) => {
         console.log("Generated OTP:", plainOtpCode);
         const hashedOtp = crypto
             .createHash("sha256")
-            .update(plainOtpCode)
+            .update("000000")
             .digest("hex");
         await otp_schema_1.default.create({
             phoneNumber: phoneNumber ? phoneNumber : "",
             email: email ? email : "",
             otpType: phoneNumber ? "phone" : "email",
-            otpCode: "000000",
+            otpCode: hashedOtp,
             expiresAt: new Date(Date.now() + 0.15 * 60 * 1000),
             isVerified: false,
             attempts: 0,

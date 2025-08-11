@@ -2,13 +2,14 @@ import express, { Request, Response, NextFunction } from "express";
 
 import "./config/dotenv.config"; // Load environment variables
 import "./config/mongodb.config"; // Connect to the database
+import "reflect-metadata";
+
 import morgan from "morgan";
 
 import appModule from "./app.route";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(express.json());
 
 app.use(morgan("dev")); // Log to console (for development)

@@ -31,15 +31,14 @@ export interface PaginatedBrands {
 
 export class BrandService {
   async create(data: CreateBrandInput): Promise<IBrand | null> {
-   
     const name = data.name.trim();
     const exists = await Brand.findOne({ name });
     if (exists) throw new Error("Brand already exists");
 
     return await Brand.create({
       name,
-      country: data.country.trim(),
-      logo: data.logo.trim(),
+      //country: data.country.trim(),
+      logo: "",
     });
   }
 

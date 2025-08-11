@@ -1,61 +1,57 @@
 import { plainToInstance } from "class-transformer";
-import {
-  validateOrReject,
-  ValidationError,
-  ValidatorOptions,
-} from "class-validator";
+import { validateOrReject, ValidationError, ValidatorOptions } from "class-validator";
 import { Request, Response, NextFunction } from "express";
+import multer from "multer";
 
-export function validationMiddleware<T>(
-  type: new () => T
-): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    const dto: any = plainToInstance(type, req.body);
+const upload = multer(); // Memory storage for parsing form-data
 
-    // Check if at least one property is present in the request body
-    const hasAtLeastOneProperty = Object.keys(req.body).some(
-      (key) => req.body[key] !== undefined && req.body[key] !== ""
-    );
+export function validationMiddleware<T extends object>(type: new () => T) {
+  const validatorOptions: ValidatorOptions = {
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    skipMissingProperties: false,
+  };
 
-    if (!hasAtLeastOneProperty) {
+  const runValidation = async (req: Request, res: Response, next: NextFunction) => {
+    const dto = plainToInstance(type, req.body, { enableImplicitConversion: true }) as T;
+
+    if (!req.body || Object.keys(req.body).length === 0) {
       res.status(400).json({
         code: 400,
         status: "Bad Request",
-        message: "At least one property must be present in the request body.",
+        message: "Request body cannot be empty.",
       });
       return;
     }
 
-    // Custom validator options to whitelist only provided properties
-    const validatorOptions: ValidatorOptions = {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      skipMissingProperties: false,
-    };
-
     try {
-      await validateOrReject(dto, validatorOptions);
+      await validateOrReject(dto as object, validatorOptions);
       req.body = dto;
       next();
-    } catch (errors) {
-      if (errors instanceof Array && errors[0] instanceof ValidationError) {
-        const validationErrors = errors
-          .map((error: ValidationError) =>
-            Object.values(error.constraints || {})
-          )
-          .flat();
+    } catch (err) {
+      if (Array.isArray(err) && err[0] instanceof ValidationError) {
+        const messages = err.map((e: ValidationError) => Object.values(e.constraints ?? {})).flat();
         res.status(400).json({
           code: 400,
           status: "Bad Request",
-          message: validationErrors[0],
+          message: messages[0] ?? "Validation failed",
         });
       } else {
-        next(errors);
+        next(err);
       }
+    }
+  };
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (req.is("multipart/form-data")) {
+
+      upload.none()(req, res, (err) => {
+        if (err) return next(err);
+        runValidation(req, res, next);
+      });
+      
+    } else {
+      runValidation(req, res, next);
     }
   };
 }

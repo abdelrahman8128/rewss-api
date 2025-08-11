@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 require("./config/dotenv.config");
 require("./config/mongodb.config");
+require("reflect-metadata");
 const morgan_1 = __importDefault(require("morgan"));
 const app_route_1 = __importDefault(require("./app.route"));
 const app = (0, express_1.default)();

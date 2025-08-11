@@ -12,6 +12,10 @@ exports.createBrand = (0, express_async_handler_1.default)(async (req, res) => {
     const brandData = req.body;
     try {
         const createdBrand = await brandService.create(brandData);
+        res.status(http_status_codes_1.StatusCodes.CREATED).json({
+            message: "Brand created successfully",
+            data: createdBrand,
+        });
     }
     catch (error) {
         if (error instanceof Error) {

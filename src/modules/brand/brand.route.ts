@@ -4,9 +4,10 @@ import {
   authMiddleware,
   authorize,
 } from "../../Middleware/authrization/authrization.middleware";
-import { createBrandValidationRules } from "./middleware/create.brand.middleware";
+import { validationMiddleware } from "../../Middleware/validation/validation.middleware";
+import { CreateBrandDto } from "./Dto/create.brand";
 
 const router: Router = express.Router();
-router.post("/create-brand", createBrandValidationRules, createBrand);
+router.post("/create-brand", validationMiddleware(CreateBrandDto), createBrand);
 
 export default router;
