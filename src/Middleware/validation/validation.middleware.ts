@@ -45,7 +45,7 @@ export function validationMiddleware<T extends object>(type: new () => T) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (req.is("multipart/form-data")) {
 
-      upload.none()(req, res, (err) => {
+      upload.any()(req, res, (err) => {
         if (err) return next(err);
         runValidation(req, res, next);
       });

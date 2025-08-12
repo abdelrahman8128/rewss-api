@@ -9,4 +9,6 @@ const validation_middleware_1 = require("../../Middleware/validation/validation.
 const create_brand_1 = require("./Dto/create.brand");
 const router = express_1.default.Router();
 router.post("/create-brand", (0, validation_middleware_1.validationMiddleware)(create_brand_1.CreateBrandDto), brand_controller_1.createBrand);
+router.get("/list-brands", brand_controller_1.listBrand);
+router.patch("/update-brand/:id", (0, validation_middleware_1.validationMiddleware)(create_brand_1.CreateBrandDto), brand_controller_1.updateBrand);
 exports.default = router;

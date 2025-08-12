@@ -3,16 +3,12 @@ import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import asyncHandler from "express-async-handler";
 
-export const createBrand = asyncHandler(async (req: Request, res: Response) => {
+export const listBrand = asyncHandler(async (req: Request, res: Response) => {
   const brandService = new BrandService();
 
   try {
-
-    const createdBrand = await brandService.create(req);
-    res.status(StatusCodes.CREATED).json({
-      message: "Brand created successfully",
-      data: createdBrand,
-    });
+    const brands = await brandService.list(req.query);
+    res.status(StatusCodes.OK).json(brands);
   } catch (error) {
     if (error instanceof Error) {
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
