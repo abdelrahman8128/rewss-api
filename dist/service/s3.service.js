@@ -14,6 +14,7 @@ class S3Service {
         this.region = region;
         this.endpoint = opts?.endpoint ?? process.env.S3_ENDPOINT;
         this.forcePathStyle = opts?.forcePathStyle ?? (process.env.S3_FORCE_PATH_STYLE === 'true');
+        this.s3 = s3_config_1.s3;
     }
     async upload(params) {
         let result;
@@ -36,10 +37,9 @@ class S3Service {
         };
     }
     async delete(key) {
-        const normalizedKey = key.replace(/^\/+/, '');
         await this.s3.send(new client_s3_1.DeleteObjectCommand({
             Bucket: this.bucket,
-            Key: normalizedKey,
+            Key: key,
         }));
     }
     getObjectUrl(key) {

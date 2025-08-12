@@ -16,7 +16,15 @@ function validationMiddleware(type) {
     };
     const runValidation = async (req, res, next) => {
         const dto = (0, class_transformer_1.plainToInstance)(type, req.body, { enableImplicitConversion: true });
+        const isMultipartWithFiles = req.is("multipart/form-data") &&
+            req.files &&
+            Array.isArray(req.files) &&
+            req.files.length > 0;
         if (!req.body || Object.keys(req.body).length === 0) {
+            if (isMultipartWithFiles) {
+                req.body = dto;
+                return next();
+            }
             res.status(400).json({
                 code: 400,
                 status: "Bad Request",

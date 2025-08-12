@@ -232,6 +232,7 @@ export class BrandService {
   }
 
   async deleteBrandLogo(id: string): Promise<boolean> {
+
     const brand = await Brand.findById(id);
     if (!brand || !brand.logo) {
       throw new Error("Brand not found or logo is missing");
@@ -245,6 +246,8 @@ export class BrandService {
     }
 
     const logoKey = urlParts[1]; // This will be "brands/file-name.png"
+    console.log(`Deleted logo from S3: ${logoKey}`);
+
     const s3Service = new S3Service();
     await s3Service.delete(logoKey);
 

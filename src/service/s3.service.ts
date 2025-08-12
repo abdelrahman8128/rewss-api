@@ -43,8 +43,8 @@ export class S3Service {
         this.endpoint = opts?.endpoint ?? process.env.S3_ENDPOINT;
         this.forcePathStyle = opts?.forcePathStyle ?? (process.env.S3_FORCE_PATH_STYLE === 'true');
 
-
-       
+        // Initialize the S3 client
+        this.s3 = s3;
     }
 
     // Uploads an object to S3 and returns its key, ETag, and a computed URL.
@@ -76,11 +76,10 @@ export class S3Service {
 
     // Deletes an object by key. Resolves when deletion request is accepted.
     async delete(key: string): Promise<void> {
-        const normalizedKey = key.replace(/^\/+/, '');
         await this.s3.send(
             new DeleteObjectCommand({
                 Bucket: this.bucket,
-                Key: normalizedKey,
+                Key: key,
             }),
         );
     }

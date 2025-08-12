@@ -208,6 +208,7 @@ class BrandService {
             throw new Error("Invalid logo URL format");
         }
         const logoKey = urlParts[1];
+        console.log(`Deleted logo from S3: ${logoKey}`);
         const s3Service = new s3_service_1.S3Service();
         await s3Service.delete(logoKey);
         brand.logo = "";
