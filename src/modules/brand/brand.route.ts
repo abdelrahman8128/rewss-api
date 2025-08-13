@@ -11,7 +11,7 @@ import { CreateBrandDto } from "./Dto/create.brand.dto";
 const router: Router = express.Router();
 router.get("/list-brands", listBrand);
 router.post("/create-brand", authorize(["admin"]), validationMiddleware(CreateBrandDto), createBrand);
-router.patch("/update-brand/:id", authorize(["admin"]), validationMiddleware(CreateBrandDto), updateBrand);
+router.patch("/update-brand/:id", authorize(["admin"]), validationMiddleware(CreateBrandDto,true), updateBrand);
 router.delete("/delete-brand/:id", authorize(["admin"]), deleteBrand);
 
 export default router;

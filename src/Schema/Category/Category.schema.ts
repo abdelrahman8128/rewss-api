@@ -14,7 +14,6 @@ const CategorySchema = new Schema<ICategory>(
             trim: true,
             index:true,
         },
-               
       
     },
     {

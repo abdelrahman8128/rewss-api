@@ -1,38 +1,40 @@
 import Category from "../../../Schema/Category/Category.schema";
+import {ICategory} from "../../../Schema/Category/Category.schema";
+
 
 export class CategoryService {
-  async create(req: any): Promise<void> {
-    
+  async create(req: any): Promise<ICategory | null> {
 
     const existingCategory = await Category.findOne({ name: req.body.name });
     if (existingCategory) {
       throw new Error("Category already exists");
     }
-    const category = new Category({
+    
+    return await Category.create({
       name: req.body.name,
+      description: req.body.description,
     });
-    category.save();
   }
 
   // async getCategoryById(id: string): Promise<ICategory | null> {
   //     return Category.findById(id).exec();
   // }
 
-async updateCategory(id: string, data: any): Promise<void> {
-    
-    const existingCategory = await Category.findById(id);
+async updateCategory(req:any): Promise<ICategory | null> {
+
+    const existingCategory = await Category.findById(req.params.id);
     if (!existingCategory) {
         throw new Error("Category not found");
     }
-    
-    if (data.name && data.name !== existingCategory.name) {
-        const categoryWithSameName = await Category.findOne({ name: data.name });
+
+    if (req.body.name && req.body.name !== existingCategory.name) {
+        const categoryWithSameName = await Category.findOne({ name: req.body.name });
         if (categoryWithSameName) {
             throw new Error("Category with this name already exists");
         }
     }
-    
-    await Category.findByIdAndUpdate(id, data, { new: true });
+
+    return await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
 }
 
   // async deleteCategory(id: string): Promise<ICategory | null> {

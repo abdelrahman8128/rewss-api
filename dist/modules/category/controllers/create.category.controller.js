@@ -11,6 +11,9 @@ exports.createCategory = (0, express_async_handler_1.default)(async (req, res) =
     const categoryService = new category_service_1.CategoryService();
     try {
         const createdCategory = await categoryService.create(req);
+        if (!createdCategory) {
+            res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({ message: "Category creation failed" });
+        }
         res.status(http_status_codes_1.StatusCodes.CREATED).json({
             message: "Category created successfully",
             data: createdCategory,

@@ -11,6 +11,6 @@ const create_brand_dto_1 = require("./Dto/create.brand.dto");
 const router = express_1.default.Router();
 router.get("/list-brands", brand_controller_1.listBrand);
 router.post("/create-brand", (0, authrization_middleware_1.authorize)(["admin"]), (0, validation_middleware_1.validationMiddleware)(create_brand_dto_1.CreateBrandDto), brand_controller_1.createBrand);
-router.patch("/update-brand/:id", (0, authrization_middleware_1.authorize)(["admin"]), (0, validation_middleware_1.validationMiddleware)(create_brand_dto_1.CreateBrandDto), brand_controller_1.updateBrand);
+router.patch("/update-brand/:id", (0, authrization_middleware_1.authorize)(["admin"]), (0, validation_middleware_1.validationMiddleware)(create_brand_dto_1.CreateBrandDto, true), brand_controller_1.updateBrand);
 router.delete("/delete-brand/:id", (0, authrization_middleware_1.authorize)(["admin"]), brand_controller_1.deleteBrand);
 exports.default = router;

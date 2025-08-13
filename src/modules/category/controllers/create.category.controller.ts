@@ -8,6 +8,9 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
 
   try {
     const createdCategory = await categoryService.create(req);
+    if (!createdCategory) {
+       res.status(StatusCodes.BAD_REQUEST).json({ message: "Category creation failed" });
+    }
     res.status(StatusCodes.CREATED).json({
       message: "Category created successfully",
       data: createdCategory,

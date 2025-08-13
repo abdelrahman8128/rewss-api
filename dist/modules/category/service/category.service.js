@@ -11,23 +11,23 @@ class CategoryService {
         if (existingCategory) {
             throw new Error("Category already exists");
         }
-        const category = new Category_schema_1.default({
+        return await Category_schema_1.default.create({
             name: req.body.name,
+            description: req.body.description,
         });
-        category.save();
     }
-    async updateCategory(id, data) {
-        const existingCategory = await Category_schema_1.default.findById(id);
+    async updateCategory(req) {
+        const existingCategory = await Category_schema_1.default.findById(req.params.id);
         if (!existingCategory) {
             throw new Error("Category not found");
         }
-        if (data.name && data.name !== existingCategory.name) {
-            const categoryWithSameName = await Category_schema_1.default.findOne({ name: data.name });
+        if (req.body.name && req.body.name !== existingCategory.name) {
+            const categoryWithSameName = await Category_schema_1.default.findOne({ name: req.body.name });
             if (categoryWithSameName) {
                 throw new Error("Category with this name already exists");
             }
         }
-        await Category_schema_1.default.findByIdAndUpdate(id, data, { new: true });
+        return await Category_schema_1.default.findByIdAndUpdate(req.params.id, req.body, { new: true });
     }
 }
 exports.CategoryService = CategoryService;

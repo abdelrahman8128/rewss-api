@@ -5,36 +5,62 @@ import multer from "multer";
 
 const upload = multer(); // Memory storage for parsing form-data
 
-export function validationMiddleware<T extends object>(type: new () => T) {
+export function validationMiddleware<T extends object>(type: new () => T, isUpdate = false) {
   const validatorOptions: ValidatorOptions = {
     whitelist: true,
     forbidNonWhitelisted: true,
-    skipMissingProperties: false,
+    // Only skip missing properties for updates
+    skipMissingProperties: isUpdate
+  };
+
+  // Remove "isDefined" errors on update to allow missing fields
+  const stripIsDefinedErrors = (errors: ValidationError[]): ValidationError[] => {
+    const prune = (errs: ValidationError[]): ValidationError[] => {
+      return errs
+        .map((e) => {
+          const nextChildren = e.children && e.children.length ? prune(e.children) : [];
+          const nextConstraints = e.constraints
+            ? Object.fromEntries(Object.entries(e.constraints).filter(([k]) => k !== "isDefined"))
+            : undefined;
+          const hasConstraints = nextConstraints && Object.keys(nextConstraints).length > 0;
+          const hasChildren = nextChildren.length > 0;
+          return {
+            ...e,
+            constraints: hasConstraints ? nextConstraints : undefined,
+            children: nextChildren
+          } as ValidationError;
+        })
+        .filter((e) => {
+          const hasConstraints = e.constraints && Object.keys(e.constraints).length > 0;
+          const hasChildren = e.children && e.children.length > 0;
+          return hasConstraints || hasChildren;
+        });
+    };
+    return prune(errors);
   };
 
   const runValidation = async (req: Request, res: Response, next: NextFunction) => {
-    const dto = plainToInstance(type, req.body, { enableImplicitConversion: true }) as T;
+    const plainBody = req.body && typeof req.body === "object" ? req.body : {};
+    const dto = plainToInstance(type, plainBody, { enableImplicitConversion: true }) as T;
 
-    // Check if it's multipart/form-data with files but empty body
-    const isMultipartWithFiles = req.is("multipart/form-data") && 
-                                req.files && 
-                                Array.isArray(req.files) && 
-                                req.files.length > 0;
-
-    if (!req.body || Object.keys(req.body).length === 0) {
-      // If there are files but no body fields in multipart request, proceed
-      if (isMultipartWithFiles) {
-        req.body = dto;
-        return next();
-      }
-      
-      // Otherwise return the error for empty body
-      res.status(400).json({
-        code: 400,
-        status: "Bad Request",
-        message: "Request body cannot be empty.",
+    // Remove undefined properties and, on updates, null values before validation
+    if (dto && typeof dto === "object") {
+      Object.keys(dto as any).forEach((key) => {
+        const value = (dto as any)[key];
+        if (value === undefined || (isUpdate && value === null)) {
+          delete (dto as any)[key];
+        }
       });
-      return;
+    }
+
+    // If multipart with files and no body fields, skip body validation
+    const isMultipart = req.is("multipart/form-data");
+    const files = (req as any).files;
+    const hasFiles = Array.isArray(files) && files.length > 0;
+    const bodyIsEmpty = !req.body || Object.keys(req.body).length === 0;
+    if (isMultipart && hasFiles && bodyIsEmpty) {
+      req.body = dto;
+      return next();
     }
 
     try {
@@ -43,14 +69,22 @@ export function validationMiddleware<T extends object>(type: new () => T) {
       next();
     } catch (err) {
       if (Array.isArray(err) && err[0] instanceof ValidationError) {
-        const messages = err.map((e: ValidationError) => Object.values(e.constraints ?? {})).flat();
+        const rawErrors = err as ValidationError[];
+        const finalErrors = isUpdate ? stripIsDefinedErrors(rawErrors) : rawErrors;
+
+        if (isUpdate && finalErrors.length === 0) {
+          req.body = dto;
+          return next();
+        }
+
+        const messages = finalErrors.map((e: ValidationError) => Object.values(e.constraints ?? {})).flat();
         res.status(400).json({
           code: 400,
           status: "Bad Request",
           message: messages[0] ?? "Validation failed",
         });
       } else {
-        next(err);
+        next(err as any);
       }
     }
   };
