@@ -5,5 +5,6 @@ export default (app: Application) => {
      app.use("/api/v1/otp", require("./modules/otp/otp.route").default);
      app.use("/api/v1/brand", require("./modules/brand/brand.route").default);
      app.use("/api/v1/model", require("./modules/model/model.route").default);
+     app.use("/api/v1/category", require("./modules/category/category.route").default);
 
 }
