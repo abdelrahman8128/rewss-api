@@ -11,9 +11,12 @@ import appModule from "./app.route";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors({
+  origin: '*',
+}));
+
 
 // Handle preflight
-app.use(cors());
 
 app.use(express.json());
 
