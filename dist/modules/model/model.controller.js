@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateModel = exports.deleteModel = exports.listModel = exports.createModel = void 0;
+var create_model_1 = require("./controllers/create.model");
+Object.defineProperty(exports, "createModel", { enumerable: true, get: function () { return create_model_1.createModel; } });
+var list_model_1 = require("./controllers/list.model");
+Object.defineProperty(exports, "listModel", { enumerable: true, get: function () { return list_model_1.listModel; } });
+var delete_model_1 = require("./controllers/delete.model");
+Object.defineProperty(exports, "deleteModel", { enumerable: true, get: function () { return delete_model_1.deleteModel; } });
+var update_model_1 = require("./controllers/update.model");
+Object.defineProperty(exports, "updateModel", { enumerable: true, get: function () { return update_model_1.updateModel; } });

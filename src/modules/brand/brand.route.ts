@@ -5,7 +5,7 @@ import {
   authorize,
 } from "../../Middleware/authrization/authrization.middleware";
 import { validationMiddleware } from "../../Middleware/validation/validation.middleware";
-import { CreateBrandDto } from "./Dto/create.brand";
+import { CreateBrandDto } from "./Dto/create.brand.dto";
 
 
 const router: Router = express.Router();
