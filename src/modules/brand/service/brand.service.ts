@@ -1,5 +1,4 @@
 import { body } from "express-validator";
-import { Int64 } from "./../../../../node_modules/@smithy/eventstream-codec/dist-types/Int64.d";
 import Brand, { IBrand } from "../../../Schema/Brand/brand.schema";
 import { Types } from "mongoose";
 import { S3Service } from "../../../service/s3.service";

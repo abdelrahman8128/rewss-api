@@ -20,7 +20,7 @@ __decorate([
     __metadata("design:type", String)
 ], registerDto.prototype, "name", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], registerDto.prototype, "email", void 0);
@@ -30,7 +30,7 @@ __decorate([
     __metadata("design:type", String)
 ], registerDto.prototype, "password", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], registerDto.prototype, "phoneNumber", void 0);
@@ -39,23 +39,3 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], registerDto.prototype, "phoneCode", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsBoolean)(),
-    __metadata("design:type", Boolean)
-], registerDto.prototype, "isPhoneVerified", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(["active", "inactive", "pending", "ban", "deleted", "blocked"]),
-    __metadata("design:type", String)
-], registerDto.prototype, "status", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(["user", "seller", "admin", "super"]),
-    __metadata("design:type", String)
-], registerDto.prototype, "role", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDate)(),
-    __metadata("design:type", Date)
-], registerDto.prototype, "createdAt", void 0);

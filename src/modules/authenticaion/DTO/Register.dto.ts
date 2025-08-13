@@ -15,7 +15,7 @@ export class registerDto {
   @IsString()
   public name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
   public email: string;
 
@@ -27,7 +27,7 @@ export class registerDto {
   // })
   public password: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   public phoneNumber?: string;
 
@@ -35,19 +35,5 @@ export class registerDto {
   @IsString()
   public phoneCode?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  public isPhoneVerified?: boolean;
 
-  @IsOptional()
-  @IsEnum(["active", "inactive", "pending", "ban", "deleted", "blocked"])
-  public status?: string;
-
-  @IsOptional()
-  @IsEnum(["user", "seller", "admin", "super"])
-  public role?: string;
-
-  @IsOptional()
-  @IsDate()
-  public createdAt?: Date;
 }

@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateBrand = exports.listBrand = exports.createBrand = void 0;
+exports.deleteBrand = exports.updateBrand = exports.listBrand = exports.createBrand = void 0;
 var create_brand_controller_1 = require("./controllers/create.brand.controller");
 Object.defineProperty(exports, "createBrand", { enumerable: true, get: function () { return create_brand_controller_1.createBrand; } });
 var list_brand_controller_1 = require("./controllers/list.brand.controller");
 Object.defineProperty(exports, "listBrand", { enumerable: true, get: function () { return list_brand_controller_1.listBrand; } });
 var update_brand_controller_1 = require("./controllers/update.brand.controller");
 Object.defineProperty(exports, "updateBrand", { enumerable: true, get: function () { return update_brand_controller_1.updateBrand; } });
+var delete_brand_controller_1 = require("./controllers/delete.brand.controller");
+Object.defineProperty(exports, "deleteBrand", { enumerable: true, get: function () { return delete_brand_controller_1.deleteBrand; } });

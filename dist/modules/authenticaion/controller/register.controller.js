@@ -10,33 +10,46 @@ const user_schema_1 = __importDefault(require("../../../Schema/User/user.schema"
 const registerController = async (req, res) => {
     try {
         const { email, phoneNumber, password, name } = req.body;
+        if (!email && !phoneNumber) {
+            return res
+                .status(400)
+                .json({ message: "Email or phone number is required" });
+        }
+        console.log("Registering user with email:", email, "and phone number:", phoneNumber);
         var existingUser;
-        existingUser = await user_schema_1.default.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({ message: "this email already exists", });
+        if (email) {
+            existingUser = await user_schema_1.default.findOne({ email });
+            if (existingUser) {
+                return res.status(409).json({ message: "this email already exists" });
+            }
         }
-        existingUser = await user_schema_1.default.findOne({ phoneNumber: phoneNumber });
-        if (existingUser) {
-            return res.status(409).json({ message: "this phone number already exists", });
+        if (phoneNumber) {
+            existingUser = await user_schema_1.default.findOne({ phoneNumber });
+            if (existingUser) {
+                return res
+                    .status(409)
+                    .json({ message: "this phone number already exists" });
+            }
         }
+        console.log("No existing user found, proceeding with registration");
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const now = new Date();
         let timestamp = `${now.getDate()}${now.getHours()}${now.getMinutes()}${now.getSeconds()}${now.getMilliseconds()}`;
-        let username = `${name.toLowerCase().replace(/\s+/g, '')}${timestamp}`;
+        let username = `${name.toLowerCase().replace(/\s+/g, "")}${timestamp}`;
         let usernameExists = await user_schema_1.default.findOne({ username });
         while (usernameExists) {
             timestamp = `${now.getDate()}${now.getHours()}${now.getMinutes()}${now.getSeconds()}${now.getMilliseconds()}${Math.floor(Math.random() * 100)}`;
-            username = `${name.toLowerCase().replace(/\s+/g, '')}${timestamp}`;
+            username = `${name.toLowerCase().replace(/\s+/g, "")}${timestamp}`;
             usernameExists = await user_schema_1.default.findOne({ username });
         }
         const newUser = await user_schema_1.default.create({
-            phoneNumber: phoneNumber,
+            phoneNumber: phoneNumber || '',
             username,
             email,
             name,
             password: hashedPassword,
         });
-        const token = jsonwebtoken_1.default.sign({ id: newUser._id, username: newUser.username, }, process.env.JWT_SECRET || "secret", {
+        const token = jsonwebtoken_1.default.sign({ id: newUser._id, username: newUser.username }, process.env.JWT_SECRET || "secret", {
             expiresIn: process.env.JWT_EXPIRATION || "1h",
         });
         res.status(201).json({
@@ -46,7 +59,7 @@ const registerController = async (req, res) => {
         });
     }
     catch (error) {
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: error });
     }
     return;
 };
