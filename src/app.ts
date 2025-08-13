@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
 
 import "./config/dotenv.config"; // Load environment variables
 import "./config/mongodb.config"; // Connect to the database
@@ -9,6 +10,15 @@ import morgan from "morgan";
 import appModule from "./app.route";
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Handle preflight
+app.options('*', cors());
 
 app.use(express.json());
 
