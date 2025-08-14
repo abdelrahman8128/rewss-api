@@ -9,7 +9,7 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 exports.updateCategoryController = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const categoryService = new category_service_1.CategoryService();
-        const updatedCategory = await categoryService.updateCategory(req);
+        const updatedCategory = await categoryService.update(req);
         res.status(200).json({ message: "Category updated successfully", data: updatedCategory });
     }
     catch (error) {

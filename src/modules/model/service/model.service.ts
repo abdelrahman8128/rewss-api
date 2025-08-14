@@ -2,6 +2,15 @@ import Model from "../../../Schema/Model/model.schema";
 import { Types } from "mongoose";
 import Brand from "../../../Schema/Brand/brand.schema";
 
+
+export interface IModelList {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  data: any[]; // Adjust type as needed
+}
+
 export class ModelService {
   async create(req: any): Promise<any | null> {
     const { name, brand } = req.body;
@@ -23,7 +32,7 @@ export class ModelService {
     return Model.findById(id).populate("brand", "name");
   }
 
-  async list(req:any): Promise<any> {   
+  async list(req:any): Promise<IModelList> {   
     const { page = 1, limit = 20, search } = req.query;
     
     // Ensure numeric values for pagination to satisfy MongoDB $skip/$limit
@@ -63,7 +72,13 @@ export class ModelService {
       }
     ]);
     
-    return models;
+    return {
+      page: pageNum,
+      limit: limitNum,
+      total: models.length,
+      pages: Math.ceil(models.length / limitNum),
+      data: models
+    };
     }
 
     async deleteModel(req:any): Promise<boolean> {

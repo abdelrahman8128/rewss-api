@@ -56,7 +56,13 @@ class ModelService {
                 }
             }
         ]);
-        return models;
+        return {
+            page: pageNum,
+            limit: limitNum,
+            total: models.length,
+            pages: Math.ceil(models.length / limitNum),
+            data: models
+        };
     }
     async deleteModel(req) {
         if (!req.params.id)

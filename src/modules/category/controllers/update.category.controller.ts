@@ -8,7 +8,7 @@ export const updateCategoryController =asyncHandler( async (req: Request, res: R
   try {
     const categoryService = new CategoryService();
 
-    const updatedCategory = await categoryService.updateCategory(req);
+    const updatedCategory = await categoryService.update(req);
     res.status(200).json({ message: "Category updated successfully", data: updatedCategory });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
