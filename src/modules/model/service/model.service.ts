@@ -104,12 +104,33 @@ export class ModelService {
     }
 
 
-    async listModelByBrand(req:any): Promise<any[]> {
+    async listModelByBrand(req: any): Promise<IModelList> {
       const { brandId } = req.params;
       if (!Types.ObjectId.isValid(brandId)) throw new Error("Invalid brand id");
 
-      const models = await Model.find({ brand: brandId }).populate("brand", "name");
-      return models;
+      const { page = 1, limit = 20, search } = req.query;
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limitNum = Math.max(1, Number(limit) || 20);
+      const skip = (pageNum - 1) * limitNum;
+
+      const filter: any = { brand: brandId };
+      if (search) {
+      filter.name = { $regex: search, $options: "i" };
+      }
+
+      const total = await Model.countDocuments(filter);
+      const models = await Model.find(filter)
+      .populate("brand", "name")
+      .skip(skip)
+      .limit(limitNum);
+
+      return {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      pages: Math.ceil(total / limitNum),
+      data: models
+      };
     }
 
 

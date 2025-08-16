@@ -88,8 +88,26 @@ class ModelService {
         const { brandId } = req.params;
         if (!mongoose_1.Types.ObjectId.isValid(brandId))
             throw new Error("Invalid brand id");
-        const models = await model_schema_1.default.find({ brand: brandId }).populate("brand", "name");
-        return models;
+        const { page = 1, limit = 20, search } = req.query;
+        const pageNum = Math.max(1, Number(page) || 1);
+        const limitNum = Math.max(1, Number(limit) || 20);
+        const skip = (pageNum - 1) * limitNum;
+        const filter = { brand: brandId };
+        if (search) {
+            filter.name = { $regex: search, $options: "i" };
+        }
+        const total = await model_schema_1.default.countDocuments(filter);
+        const models = await model_schema_1.default.find(filter)
+            .populate("brand", "name")
+            .skip(skip)
+            .limit(limitNum);
+        return {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            pages: Math.ceil(total / limitNum),
+            data: models
+        };
     }
     async validateBrand(brandId) {
         if (!mongoose_1.Types.ObjectId.isValid(brandId))
