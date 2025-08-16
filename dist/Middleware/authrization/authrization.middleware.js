@@ -8,14 +8,19 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_schema_1 = __importDefault(require("../../Schema/User/user.schema"));
 const authMiddleware = async (req, res, next) => {
     try {
-        const token = req.headers.token;
+        const token = req.headers.authorization;
+        console.log("Authorization header:", token);
         if (!token) {
             return res
                 .status(401)
                 .json({ message: "Authorization token is required" });
         }
         const tokenString = Array.isArray(token) ? token[0] : token;
-        const decoded = jsonwebtoken_1.default.verify(tokenString, process.env.JWT_SECRET || "default_secret");
+        if (!tokenString.startsWith("Bearer ")) {
+            return res.status(401).json({ message: "Invalid token format" });
+        }
+        const tokenPart = tokenString.split(" ")[1];
+        const decoded = jsonwebtoken_1.default.verify(tokenPart, process.env.JWT_SECRET || "default_secret");
         const user = await user_schema_1.default.findById(decoded.id);
         if (!user) {
             return res.status(401).json({ message: "User not found" });
@@ -30,7 +35,7 @@ const authMiddleware = async (req, res, next) => {
             return res.status(401).json({ message: "Invalid token" });
         }
         if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
-            return res.status(401).json({ message: "Token expired" });
+            return res.status(401).json({ message: "Session expired" });
         }
         return res.status(500).json({ message: "Internal server error" });
     }

@@ -84,6 +84,13 @@ class ModelService {
             throw new Error("Model not found");
         return updatedModel;
     }
+    async listModelByBrand(req) {
+        const { brandId } = req.params;
+        if (!mongoose_1.Types.ObjectId.isValid(brandId))
+            throw new Error("Invalid brand id");
+        const models = await model_schema_1.default.find({ brand: brandId }).populate("brand", "name");
+        return models;
+    }
     async validateBrand(brandId) {
         if (!mongoose_1.Types.ObjectId.isValid(brandId))
             throw new Error("Invalid brand id");

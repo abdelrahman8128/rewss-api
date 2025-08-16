@@ -1,14 +1,14 @@
-import { listBrand } from './../../brand/controllers/list.brand.controller';
-import { ModelService } from "./../service/model.service";
+import { listBrand } from '../../brand/controllers/list.brand.controller';
+import { ModelService } from "../service/model.service";
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import asyncHandler from "express-async-handler";
 
-export const listModel = asyncHandler(async (req: Request, res: Response) => {
+export const listModelByBrandController = asyncHandler(async (req: Request, res: Response) => {
   const modelService = new ModelService();
 
   try {
-    const models = await modelService.list(req);
+    const models = await modelService.listModelByBrand(req);
     res.status(StatusCodes.OK).json({
       message: "Models retrieved successfully",
       data: models,

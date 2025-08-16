@@ -103,10 +103,22 @@ export class ModelService {
       return updatedModel;
     }
 
+
+    async listModelByBrand(req:any): Promise<any[]> {
+      const { brandId } = req.params;
+      if (!Types.ObjectId.isValid(brandId)) throw new Error("Invalid brand id");
+
+      const models = await Model.find({ brand: brandId }).populate("brand", "name");
+      return models;
+    }
+
+
     private async validateBrand(brandId: string): Promise<void> {
       if (!Types.ObjectId.isValid(brandId)) throw new Error("Invalid brand id");
       const brandExists = await Brand.exists({ _id: brandId });
       if (!brandExists) throw new Error("Brand not found");
     }
+
+
 
 }

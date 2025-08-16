@@ -9,8 +9,9 @@ const authrization_middleware_1 = require("../../Middleware/authrization/authriz
 const validation_middleware_1 = require("../../Middleware/validation/validation.middleware");
 const create_model_dto_1 = require("./Dto/create.model.dto");
 const router = express_1.default.Router();
-router.get("/list-model", model_controller_1.listModel);
-router.post("/create-model", (0, authrization_middleware_1.authorize)(["admin"]), (0, validation_middleware_1.validationMiddleware)(create_model_dto_1.CreateModelDto), model_controller_1.createModel);
-router.patch("/update-model/:id", (0, authrization_middleware_1.authorize)(["admin"]), model_controller_1.updateModel);
-router.delete("/delete-model/:id", (0, authrization_middleware_1.authorize)(["admin"]), model_controller_1.deleteModel);
+router.get("/list-model", model_controller_1.listModelController);
+router.get("/list-model-by-brand/:brandId", model_controller_1.listModelByBrandController);
+router.post("/create-model", (0, authrization_middleware_1.authorize)(["admin"]), (0, validation_middleware_1.validationMiddleware)(create_model_dto_1.CreateModelDto), model_controller_1.createModelController);
+router.patch("/update-model/:id", (0, authrization_middleware_1.authorize)(["admin"]), model_controller_1.updateModelController);
+router.delete("/delete-model/:id", (0, authrization_middleware_1.authorize)(["admin"]), model_controller_1.deleteModelController);
 exports.default = router;

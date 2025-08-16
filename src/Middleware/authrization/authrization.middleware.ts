@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import User from "../../Schema/User/user.schema"; // Assuming you have a User schema
 
-
 export const authMiddleware = async (
   req: Request,
   res: Response,
@@ -10,8 +9,9 @@ export const authMiddleware = async (
 ) => {
   try {
     // Get the authorization header
-    const token = req.headers.token;
+    const token = req.headers.authorization;
 
+    console.log("Authorization header:", token);
     // Check if the header exists
     if (!token) {
       return res
@@ -22,13 +22,20 @@ export const authMiddleware = async (
     // Ensure token is a string
     const tokenString = Array.isArray(token) ? token[0] : token;
 
+    // Check if the token starts with "Bearer "
+    if (!tokenString.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Invalid token format" });
+    }
+
+    // Extract the token part
+    const tokenPart = tokenString.split(" ")[1];
     // Verify the token
     const decoded = jwt.verify(
-      tokenString,
+      tokenPart,
       process.env.JWT_SECRET || "default_secret"
     ) as any;
 
-    const user = await User.findById(decoded.id );
+    const user = await User.findById(decoded.id);
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
@@ -46,7 +53,7 @@ export const authMiddleware = async (
       return res.status(401).json({ message: "Invalid token" });
     }
     if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ message: "Token expired" });
+      return res.status(401).json({ message: "Session expired" });
     }
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -62,11 +69,11 @@ export const authorize = (roles: string[]) => {
       if (!req.user) {
         await new Promise<void>((resolve, reject) => {
           authMiddleware(req, res, (err?: any) => {
-        if (err) reject(err);
-        else resolve();
+            if (err) reject(err);
+            else resolve();
           });
         });
-        
+
         // If authMiddleware sets res.headersSent, it means it sent an error response
         if (res.headersSent) {
           return;

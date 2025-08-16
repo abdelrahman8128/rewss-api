@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import asyncHandler from "express-async-handler";
 
-export const createModel = asyncHandler(async (req: Request, res: Response) => {
+export const createModelController = asyncHandler(async (req: Request, res: Response) => {
   const modelService = new ModelService();
 
   try {
