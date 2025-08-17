@@ -1,61 +1,70 @@
-import Ad from "../../Schema/Ad/ad.schema"
+import Ad from "../../Schema/Ad/ad.schema";
 import { S3Service, UploadResult } from "../../service/s3.service";
 import * as fs from "fs";
 import * as path from "path";
 import AdImage from "../../Schema/productImage/product.image.schema";
+import Model from "../../Schema/Model/model.schema";
+
 
 
 export class AdService {
- 
-    async create (req:any){
+  async create(req: any) {
+    const albumFiles = Array.isArray(req.files)
+      ? req.files.filter((f: any) => f.fieldname === "album")
+      : [];
+    const thumbnailFile = Array.isArray(req.files)
+      ? req.files.find((f: any) => f.fieldname === "thumbnail")
+      : null;
 
-        const albumFiles = Array.isArray(req.files)
-            ? req.files.filter((f: any) => f.fieldname === "album")
-            : [];
-        const thumbnailFile = Array.isArray(req.files)
-            ? req.files.find((f: any) => f.fieldname === "thumbnail")
-            : null;
-
-        if (albumFiles.length < 1) {
-            throw new Error(" album images are required");
-        }
-        if (!thumbnailFile) {
-            throw new Error("A thumbnail image is required");
-        }
-
-        const adData = req.body;
-        const ad = await Ad.create({
-            title: adData.title,
-            description: adData.description,
-            price: adData.price,
-            condition: adData.condition,
-            models: adData.models,
-            manufacturedCountry: adData.manufacturedCountry,
-        });
-
-        // Save thumbnail image
-        const thumbnailImageData = await this.saveImage(thumbnailFile, ad._id.toString());
-      
-        const thumbnailImage = await AdImage.create({
-            adId: ad._id,
-            imageId: thumbnailImageData.key,
-            imageUrl: thumbnailImageData.url,
-        });
-        
-        ad.thumbnail = thumbnailImage._id;
-
-
-        await ad.save();
-
-
+    if (albumFiles.length < 1) {
+      throw new Error(" album images are required");
     }
-    
+    if (!thumbnailFile) {
+      throw new Error("A thumbnail image is required");
+    }
 
-   
+    const adData = req.body;
 
- private async saveImage(file: any,adId:String): Promise<UploadResult> {
-    
+    const verifiedModels = (
+      await Promise.all(
+      adData.model.map(async (model: any) => {
+        const existsModel = await Model.findById(model);
+        if (existsModel) {
+        return { model };
+        }
+        return null;
+      })
+      )
+    ).filter(Boolean);
 
+    console.log("Normalized Models:", verifiedModels);
+    const ad = await Ad.create({
+      title: adData.title,
+      description: adData.description,
+      price: adData.price,
+      condition: adData.condition,
+      models: verifiedModels,
+      manufacturedCountry: adData.manufacturedCountry,
+    });
+
+    // Save thumbnail image
+    const thumbnailImageData = await this.saveImage(
+      thumbnailFile,
+      ad._id.toString()
+    );
+
+    const thumbnailImage = await AdImage.create({
+      adId: ad._id,
+      imageId: thumbnailImageData.key,
+      imageUrl: thumbnailImageData.url,
+    });
+
+    ad.thumbnail = thumbnailImage._id;
+
+    await ad.save();
+  }
+
+  private async saveImage(file: any, adId: String): Promise<UploadResult> {
     if (!file) {
       throw new Error("image file is required");
     }
@@ -80,29 +89,26 @@ export class AdService {
     try {
       const sharp = (await import("sharp")).default;
 
-      const MAX_WIDTH = 80;
-      const MAX_HEIGHT = 80;
+      let pipeline = sharp(logoPath).rotate();
 
-    let pipeline = sharp(logoPath).rotate();
-
-    switch (file.mimetype) {
-      case "image/jpeg":
-      case "image/jpg":
-        pipeline = pipeline.jpeg({ quality: 70, mozjpeg: true });
-        break;
-      case "image/png":
-        pipeline = pipeline.png({ compressionLevel: 9, quality: 70 });
-        break;
-      case "image/webp":
-        pipeline = pipeline.webp({ quality: 70 });
-        break;
-      case "image/avif":
-        pipeline = pipeline.avif({ quality: 70 });
-        break;
-      default:
-        // leave format unchanged
-        break;
-    }
+      switch (file.mimetype) {
+        case "image/jpeg":
+        case "image/jpg":
+          pipeline = pipeline.jpeg({ quality: 70, mozjpeg: true });
+          break;
+        case "image/png":
+          pipeline = pipeline.png({ compressionLevel: 9, quality: 70 });
+          break;
+        case "image/webp":
+          pipeline = pipeline.webp({ quality: 70 });
+          break;
+        case "image/avif":
+          pipeline = pipeline.avif({ quality: 70 });
+          break;
+        default:
+          // leave format unchanged
+          break;
+      }
 
       const optimizedBuffer = await pipeline.toBuffer();
       fs.writeFileSync(logoPath, optimizedBuffer);
@@ -124,8 +130,6 @@ export class AdService {
     };
 
     const uploadResult = await s3Service.upload(params);
-
-    console.log("S3 Upload Result:", uploadResult);
 
     // Clean up local file after upload
     if (fs.existsSync(logoPath)) {

@@ -9,9 +9,7 @@ const AdSchema = new mongoose_1.Schema({
     },
     slug: {
         type: String,
-        required: [true, "Ad slug is required"],
         trim: true,
-        unique: true,
         index: true,
         lowercase: true,
     },
@@ -20,7 +18,7 @@ const AdSchema = new mongoose_1.Schema({
             model: {
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: "Model",
-                required: [true, "Model name is required"],
+                required: [true, "Model is required"],
                 index: true,
             },
         },
@@ -53,7 +51,7 @@ const AdSchema = new mongoose_1.Schema({
     ],
     status: {
         type: String,
-        enum: ["active", "pending", "deleted",],
+        enum: ["active", "pending", "deleted"],
         default: "pending",
         index: true,
     },

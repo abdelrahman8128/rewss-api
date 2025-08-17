@@ -42,6 +42,7 @@ const s3_service_1 = require("../../service/s3.service");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const product_image_schema_1 = __importDefault(require("../../Schema/productImage/product.image.schema"));
+const model_schema_1 = __importDefault(require("../../Schema/Model/model.schema"));
 class AdService {
     async create(req) {
         const albumFiles = Array.isArray(req.files)
@@ -57,12 +58,20 @@ class AdService {
             throw new Error("A thumbnail image is required");
         }
         const adData = req.body;
+        const verifiedModels = (await Promise.all(adData.model.map(async (model) => {
+            const existsModel = await model_schema_1.default.findById(model);
+            if (existsModel) {
+                return { model };
+            }
+            return null;
+        }))).filter(Boolean);
+        console.log("Normalized Models:", verifiedModels);
         const ad = await ad_schema_1.default.create({
             title: adData.title,
             description: adData.description,
             price: adData.price,
             condition: adData.condition,
-            models: adData.models,
+            models: verifiedModels,
             manufacturedCountry: adData.manufacturedCountry,
         });
         const thumbnailImageData = await this.saveImage(thumbnailFile, ad._id.toString());
@@ -90,8 +99,6 @@ class AdService {
         fs.writeFileSync(logoPath, file.buffer);
         try {
             const sharp = (await import("sharp")).default;
-            const MAX_WIDTH = 80;
-            const MAX_HEIGHT = 80;
             let pipeline = sharp(logoPath).rotate();
             switch (file.mimetype) {
                 case "image/jpeg":
@@ -125,7 +132,6 @@ class AdService {
             ACL: "public-read",
         };
         const uploadResult = await s3Service.upload(params);
-        console.log("S3 Upload Result:", uploadResult);
         if (fs.existsSync(logoPath)) {
             fs.unlinkSync(logoPath);
         }
