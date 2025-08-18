@@ -78,7 +78,9 @@ class ModelService {
         if (!mongoose_1.Types.ObjectId.isValid(id))
             throw new Error("Invalid model id");
         const { name, brand } = req.body;
-        await this.validateBrand(brand);
+        if (brand) {
+            await this.validateBrand(brand);
+        }
         const updatedModel = await model_schema_1.default.findByIdAndUpdate(id, { name, brand }, { new: true }).populate("brand", "name");
         if (!updatedModel)
             throw new Error("Model not found");

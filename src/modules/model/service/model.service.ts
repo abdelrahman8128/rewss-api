@@ -96,7 +96,10 @@ export class ModelService {
 
       const { name, brand } = req.body;
       
-      await this.validateBrand(brand);
+      if (brand) {
+        await this.validateBrand(brand);
+
+      }
 
       const updatedModel = await Model.findByIdAndUpdate(id, { name, brand }, { new: true }).populate("brand", "name");
       if (!updatedModel) throw new Error("Model not found");
