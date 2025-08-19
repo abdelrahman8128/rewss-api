@@ -11,10 +11,7 @@ exports.listModelController = (0, express_async_handler_1.default)(async (req, r
     const modelService = new model_service_1.ModelService();
     try {
         const models = await modelService.list(req);
-        res.status(http_status_codes_1.StatusCodes.OK).json({
-            message: "Models retrieved successfully",
-            data: models,
-        });
+        res.status(http_status_codes_1.StatusCodes.OK).json(models);
     }
     catch (error) {
         if (error instanceof Error) {

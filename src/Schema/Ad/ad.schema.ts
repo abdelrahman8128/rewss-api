@@ -63,12 +63,12 @@ const AdSchema = new Schema<IAd>(
     },
     thumbnail: {
       type: Schema.Types.ObjectId,
-      ref: "ProductImage", // Assuming you have a ProductImage model
+      ref: "AdImage", // Assuming you have a ProductImage model
     },
     album: [
       {
         type: Schema.Types.ObjectId,
-        ref: "ProductImage", // Assuming you have a ProductImage model
+        ref: "AdImage", // Assuming you have a ProductImage model
       },
     ],
     status: {
