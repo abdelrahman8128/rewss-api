@@ -41,12 +41,12 @@ const AdSchema = new mongoose_1.Schema({
     },
     thumbnail: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: "ProductImage",
+        ref: "AdImage",
     },
     album: [
         {
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: "ProductImage",
+            ref: "AdImage",
         },
     ],
     status: {

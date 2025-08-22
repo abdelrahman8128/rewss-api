@@ -11,17 +11,16 @@ exports.listModelByBrandController = (0, express_async_handler_1.default)(async 
     const modelService = new model_service_1.ModelService();
     try {
         const models = await modelService.listModelByBrand(req);
-        res.status(http_status_codes_1.StatusCodes.OK).json({
-            message: "Models retrieved successfully",
-            data: models,
-        });
+        res.status(http_status_codes_1.StatusCodes.OK).json(models);
     }
     catch (error) {
         if (error instanceof Error) {
             res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({ message: error.message });
         }
         else {
-            res.status(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "An unexpected error occurred" });
+            res
+                .status(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR)
+                .json({ message: "An unexpected error occurred" });
         }
     }
 });

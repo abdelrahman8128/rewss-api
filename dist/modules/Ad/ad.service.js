@@ -41,7 +41,7 @@ const ad_schema_1 = __importDefault(require("../../Schema/Ad/ad.schema"));
 const s3_service_1 = require("../../service/s3.service");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
-const product_image_schema_1 = __importDefault(require("../../Schema/productImage/product.image.schema"));
+const Ad_image_schema_1 = __importDefault(require("../../Schema/AdImage/Ad.image.schema"));
 const model_schema_1 = __importDefault(require("../../Schema/Model/model.schema"));
 class AdService {
     async create(req) {
@@ -65,7 +65,6 @@ class AdService {
             }
             return null;
         }))).filter(Boolean);
-        console.log("Normalized Models:", verifiedModels);
         const ad = await ad_schema_1.default.create({
             title: adData.title,
             description: adData.description,
@@ -75,13 +74,34 @@ class AdService {
             manufacturedCountry: adData.manufacturedCountry,
         });
         const thumbnailImageData = await this.saveImage(thumbnailFile, ad._id.toString());
-        const thumbnailImage = await product_image_schema_1.default.create({
+        const thumbnailImage = await Ad_image_schema_1.default.create({
             adId: ad._id,
             imageId: thumbnailImageData.key,
             imageUrl: thumbnailImageData.url,
         });
         ad.thumbnail = thumbnailImage._id;
+        for (const imageFile of albumFiles) {
+            const imageData = await this.saveImage(imageFile, ad._id.toString());
+            const adImage = await Ad_image_schema_1.default.create({
+                adId: ad._id,
+                imageId: imageData.key,
+                imageUrl: imageData.url,
+            });
+            ad.album.push(adImage._id);
+        }
         await ad.save();
+        await ad.populate([
+            { path: "album", select: "imageUrl -_id" },
+            {
+                path: "models.model",
+                populate: { path: "brand", select: "name logo -_id" },
+            },
+            {
+                path: "thumbnail",
+                select: "imageUrl -_id"
+            }
+        ]);
+        return ad;
     }
     async saveImage(file, adId) {
         if (!file) {

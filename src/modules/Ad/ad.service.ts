@@ -2,13 +2,12 @@ import Ad from "../../Schema/Ad/ad.schema";
 import { S3Service, UploadResult } from "../../service/s3.service";
 import * as fs from "fs";
 import * as path from "path";
-import AdImage from "../../Schema/productImage/product.image.schema";
+import AdImage from "../../Schema/AdImage/Ad.image.schema";
 import Model from "../../Schema/Model/model.schema";
-
-
+import { IAd } from "../../Schema/Ad/ad.schema";
 
 export class AdService {
-  async create(req: any) {
+  async create(req: any): Promise<IAd> {
     const albumFiles = Array.isArray(req.files)
       ? req.files.filter((f: any) => f.fieldname === "album")
       : [];
@@ -27,17 +26,16 @@ export class AdService {
 
     const verifiedModels = (
       await Promise.all(
-      adData.model.map(async (model: any) => {
-        const existsModel = await Model.findById(model);
-        if (existsModel) {
-        return { model };
-        }
-        return null;
-      })
+        adData.model.map(async (model: any) => {
+          const existsModel = await Model.findById(model);
+          if (existsModel) {
+            return { model };
+          }
+          return null;
+        })
       )
     ).filter(Boolean);
 
-    console.log("Normalized Models:", verifiedModels);
     const ad = await Ad.create({
       user: req.user._id,
       title: adData.title,
@@ -62,7 +60,30 @@ export class AdService {
 
     ad.thumbnail = thumbnailImage._id;
 
+    for (const imageFile of albumFiles) {
+      const imageData = await this.saveImage(imageFile, ad._id.toString());
+      const adImage = await AdImage.create({
+        adId: ad._id,
+        imageId: imageData.key,
+        imageUrl: imageData.url,
+      });
+      ad.album.push(adImage._id);
+    }
+
     await ad.save();
+    await ad.populate([
+      { path: "album", select: "imageUrl -_id" },
+      {
+        path: "models.model",
+        populate: { path: "brand" , select: "name logo -_id" },
+      },
+      {
+        path: "thumbnail",
+        select: "imageUrl -_id"
+      }
+    ]);
+
+    return ad;
   }
 
 
