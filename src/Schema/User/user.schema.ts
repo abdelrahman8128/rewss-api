@@ -13,10 +13,9 @@ export interface IUser extends Document {
   role: "user" | "seller" | "admin" | "super"; // Assuming a role field is needed
   createdAt: Date;
   updatedAt: Date;
-
   avatar?: string; // Optional avatar field
-
 }
+
 const UserSchema = new Schema<IUser>(
   {
     username: {

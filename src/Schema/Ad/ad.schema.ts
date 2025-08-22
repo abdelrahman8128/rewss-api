@@ -1,6 +1,7 @@
 import { model, Schema, Document } from "mongoose";
 
 export interface IAd extends Document {
+  userId: Schema.Types.ObjectId;
   _id: Schema.Types.ObjectId;
   title: string;
   slug: string;
@@ -14,12 +15,19 @@ export interface IAd extends Document {
   thumbnail: Schema.Types.ObjectId; // URL for thumbnail image
   album: Schema.Types.ObjectId[]; // Array of image URLs
   status: "active" | "pending" | "deleted";
+  price: number;
   createdAt?: Date; // Optional field for creation timestamp
   updatedAt?: Date; // Optional field for last update timestamp
 }
 
 const AdSchema = new Schema<IAd>(
   {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "User is required"],
+      index: true, // Index for faster search
+    },
     title: {
       type: String,
       required: [true, "Ad title is required"],
@@ -33,6 +41,7 @@ const AdSchema = new Schema<IAd>(
       index: true, // Index for faster search
       lowercase: true, // Convert slug to lowercase
     },
+    
     models: [
       {
         model: {
@@ -77,6 +86,14 @@ const AdSchema = new Schema<IAd>(
       default: "pending",
       index: true, // Index for faster search
     },
+
+    price :{
+      type: Number,
+      required: [true, "Ad price is required"],
+      min: [0, "Price cannot be negative"],
+      index: true, // Index for faster search
+    }
+
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt fields

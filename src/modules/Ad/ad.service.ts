@@ -39,6 +39,7 @@ export class AdService {
 
     console.log("Normalized Models:", verifiedModels);
     const ad = await Ad.create({
+      user: req.user._id,
       title: adData.title,
       description: adData.description,
       price: adData.price,
@@ -63,6 +64,97 @@ export class AdService {
 
     await ad.save();
   }
+
+
+  async update(req:any){
+    
+
+    const adId = req.params.id;
+    const ad = await Ad.findById(adId);
+    if (!ad) {
+      throw new Error("Ad not found");
+    }
+
+    if ((req.user.role == "seller" && ad.userId.toString() !== req.user._id.toString())) {
+      throw new Error("You are not authorized to update this ad");
+    }
+
+    const adData = req.body;
+
+
+    const albumFiles = Array.isArray(req.files)
+      ? req.files.filter((f: any) => f.fieldname === "album")
+      : [];
+    const thumbnailFile = Array.isArray(req.files)
+      ? req.files.find((f: any) => f.fieldname === "thumbnail")
+      : null;
+
+    // Delete old thumbnail and album images from s3 and database
+    if (thumbnailFile) {
+      const oldThumbnail = await AdImage.findById(ad.thumbnail);
+      if (oldThumbnail) {
+        const s3Service = new S3Service();
+
+        await s3Service.delete(oldThumbnail.imageId);
+        await oldThumbnail.deleteOne();
+      }
+    }
+
+    if (albumFiles.length) {
+      const oldAlbumImages = await AdImage.find({ adId: ad._id });
+      const s3Service = new S3Service();
+      await Promise.all(
+        oldAlbumImages.map(async (i) => {
+          await s3Service.delete(i.imageId);
+          await i.deleteOne();
+        })
+      );
+    }
+
+    // Create new thumbnail image
+    if (thumbnailFile) {
+      const thumbnailImageData = await this.saveImage(
+        thumbnailFile,
+        ad._id.toString()
+      );
+      const thumbnailImage = await AdImage.create({
+        adId: ad._id,
+        imageId: thumbnailImageData.key,
+        imageUrl: thumbnailImageData.url,
+      });
+      ad.thumbnail = thumbnailImage._id;
+    }
+
+    // Create new album images
+    if (albumFiles.length) {
+      const imagesPromises = albumFiles.map(async (file:any) => {
+        const imageData = await this.saveImage(file, ad._id.toString());
+        const image = await AdImage.create({
+          adId: ad._id,
+          imageId: imageData.key,
+          imageUrl: imageData.url,
+        });
+        return image;
+      });
+      const images = await Promise.all(imagesPromises);
+      ad.album = images.map((i) => i._id);
+    }
+    // Update ad data
+    if (adData.title) ad.title = adData.title;
+    if (adData.description) ad.description = adData.description;
+    if (adData.price) ad.price = adData.price;
+    if (adData.condition) ad.condition = adData.condition;
+    if (adData.model) ad.models = adData.model;
+    if (adData.manufacturedCountry) ad.manufacturedCountry = adData.manufacturedCountry;
+
+    await ad.save();
+  }
+
+  
+
+
+
+
 
   private async saveImage(file: any, adId: String): Promise<UploadResult> {
     if (!file) {
