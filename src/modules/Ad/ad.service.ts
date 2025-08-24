@@ -5,8 +5,17 @@ import * as path from "path";
 import AdImage from "../../Schema/AdImage/Ad.image.schema";
 import Model from "../../Schema/Model/model.schema";
 import { IAd } from "../../Schema/Ad/ad.schema";
+import mongoose, { Types } from "mongoose";
+import StockService from "../Stock/service/stock.service";
+
 
 export class AdService {
+  private stockService: StockService;
+
+  constructor() {
+    this.stockService = new StockService();
+  }
+
   async create(req: any): Promise<IAd> {
     const albumFiles = Array.isArray(req.files)
       ? req.files.filter((f: any) => f.fieldname === "album")
@@ -24,20 +33,11 @@ export class AdService {
 
     const adData = req.body;
 
-    const verifiedModels = (
-      await Promise.all(
-        adData.model.map(async (model: any) => {
-          const existsModel = await Model.findById(model);
-          if (existsModel) {
-            return { model };
-          }
-          return null;
-        })
-      )
-    ).filter(Boolean);
+    const verifiedModels = await this.verifyModels(adData.model);
+
 
     const ad = await Ad.create({
-      user: req.user._id,
+      userId: req.user._id,
       title: adData.title,
       description: adData.description,
       price: adData.price,
@@ -58,7 +58,7 @@ export class AdService {
       imageUrl: thumbnailImageData.url,
     });
 
-    ad.thumbnail = thumbnailImage._id;
+    ad.thumbnail = new Types.ObjectId(thumbnailImage._id.toString());
 
     for (const imageFile of albumFiles) {
       const imageData = await this.saveImage(imageFile, ad._id.toString());
@@ -67,41 +67,69 @@ export class AdService {
         imageId: imageData.key,
         imageUrl: imageData.url,
       });
-      ad.album.push(adImage._id);
+      ad.album.push(new Types.ObjectId(adImage._id.toString()));
+    }
+
+    // Create initial stock record if stock data is provided
+    if (adData.initialStock || adData.totalQuantity) {
+      const stockData = {
+        available: adData.totalQuantity || adData.initialStock || 0,
+        reserved: 0,
+        bought: 0,
+      };
+
+      const stock = await this.stockService.createStock(
+        ad._id,
+        stockData,
+        {
+          userId: req.user._id,
+          action: "created",
+          description: `Initial stock created for ad: ${ad.title}`,
+          reason: "Ad creation",
+          metadata: { adTitle: ad.title },
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+        }
+      );
+
+      ad.stock = stock._id;
     }
 
     await ad.save();
     await ad.populate([
-      { path: "album", select: "imageUrl -_id" },
+      { path: "album", select: "imageUrl" },
       {
         path: "models.model",
-        populate: { path: "brand" , select: "name logo -_id" },
+        populate: { path: "brand", select: "name logo -_id" },
       },
       {
         path: "thumbnail",
-        select: "imageUrl -_id"
-      }
+        select: "imageUrl",
+      },
+      {
+        path: "stock",
+        select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+      },
     ]);
 
     return ad;
   }
 
-
-  async update(req:any){
-    
-
+  async update(req: any) {
     const adId = req.params.id;
     const ad = await Ad.findById(adId);
     if (!ad) {
       throw new Error("Ad not found");
     }
 
-    if ((req.user.role == "seller" && ad.userId.toString() !== req.user._id.toString())) {
+    if (
+      req.user.role == "seller" &&
+      ad.userId.toString() !== req.user._id.toString()
+    ) {
       throw new Error("You are not authorized to update this ad");
     }
 
     const adData = req.body;
-
 
     const albumFiles = Array.isArray(req.files)
       ? req.files.filter((f: any) => f.fieldname === "album")
@@ -110,22 +138,25 @@ export class AdService {
       ? req.files.find((f: any) => f.fieldname === "thumbnail")
       : null;
 
+
     // Delete old thumbnail and album images from s3 and database
     if (thumbnailFile) {
       const oldThumbnail = await AdImage.findById(ad.thumbnail);
       if (oldThumbnail) {
         const s3Service = new S3Service();
-
         await s3Service.delete(oldThumbnail.imageId);
         await oldThumbnail.deleteOne();
       }
     }
 
-    if (albumFiles.length) {
+    if (albumFiles.length || req.body.album) {
       const oldAlbumImages = await AdImage.find({ adId: ad._id });
       const s3Service = new S3Service();
+      const oldAlbumImagesToRemove = oldAlbumImages.filter(
+        (i) => !req.body.album?.includes(i._id.toString())
+      );
       await Promise.all(
-        oldAlbumImages.map(async (i) => {
+        oldAlbumImagesToRemove.map(async (i) => {
           await s3Service.delete(i.imageId);
           await i.deleteOne();
         })
@@ -143,12 +174,12 @@ export class AdService {
         imageId: thumbnailImageData.key,
         imageUrl: thumbnailImageData.url,
       });
-      ad.thumbnail = thumbnailImage._id;
+      ad.thumbnail = new Types.ObjectId(thumbnailImage._id.toString());
     }
 
     // Create new album images
     if (albumFiles.length) {
-      const imagesPromises = albumFiles.map(async (file:any) => {
+      const imagesPromises = albumFiles.map(async (file: any) => {
         const imageData = await this.saveImage(file, ad._id.toString());
         const image = await AdImage.create({
           adId: ad._id,
@@ -158,24 +189,47 @@ export class AdService {
         return image;
       });
       const images = await Promise.all(imagesPromises);
-      ad.album = images.map((i) => i._id);
+      ad.album = [...ad.album, ...images.map((i) => i._id)];
     }
     // Update ad data
     if (adData.title) ad.title = adData.title;
     if (adData.description) ad.description = adData.description;
     if (adData.price) ad.price = adData.price;
     if (adData.condition) ad.condition = adData.condition;
-    if (adData.model) ad.models = adData.model;
-    if (adData.manufacturedCountry) ad.manufacturedCountry = adData.manufacturedCountry;
+    if (adData.manufacturedCountry)
+      ad.manufacturedCountry = adData.manufacturedCountry;
+
+    if (adData.model){
+      
+      const verifiedModels = await this.verifyModels(adData.model);
+      
+
+      ad.models = verifiedModels;
+
+    }
+
+
+
 
     await ad.save();
+    await ad.populate([
+      { path: "album", select: "imageUrl " },
+      {
+        path: "models.model",
+        populate: { path: "brand", select: "name logo -_id" },
+      },
+      {
+        path: "thumbnail",
+        select: "imageUrl",
+      },
+      {
+        path: "stock",
+        select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+      },
+    ]);
+
+    return ad;
   }
-
-  
-
-
-
-
 
   private async saveImage(file: any, adId: String): Promise<UploadResult> {
     if (!file) {
@@ -191,18 +245,16 @@ export class AdService {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const logoFileName = `${adId}-logo-${Date.now()}.${
-      file.mimetype.split("/")[1]
-    }`;
-    const logoPath = path.join(uploadDir, logoFileName);
+    const fileName = `${adId}-${Date.now()}.${file.mimetype.split("/")[1]}`;
+    const filePath = path.join(uploadDir, fileName);
 
-    fs.writeFileSync(logoPath, file.buffer);
+    fs.writeFileSync(filePath, file.buffer);
 
     // Optimize and downscale the image before upload
     try {
       const sharp = (await import("sharp")).default;
 
-      let pipeline = sharp(logoPath).rotate();
+      let pipeline = sharp(filePath).rotate();
 
       switch (file.mimetype) {
         case "image/jpeg":
@@ -224,7 +276,7 @@ export class AdService {
       }
 
       const optimizedBuffer = await pipeline.toBuffer();
-      fs.writeFileSync(logoPath, optimizedBuffer);
+      fs.writeFileSync(filePath, optimizedBuffer);
     } catch (err) {
       console.warn(
         "Logo optimization failed, proceeding with original file:",
@@ -236,8 +288,8 @@ export class AdService {
     const s3Service = new S3Service();
     const params = {
       Bucket: process.env.S3_BUCKET as string,
-      Key: `ads/${logoFileName}`,
-      Body: fs.createReadStream(logoPath),
+      Key: `ads/${fileName}`,
+      Body: fs.createReadStream(filePath),
       ContentType: file.mimetype,
       ACL: "public-read", // 👈 makes it public
     };
@@ -245,13 +297,28 @@ export class AdService {
     const uploadResult = await s3Service.upload(params);
 
     // Clean up local file after upload
-    if (fs.existsSync(logoPath)) {
-      fs.unlinkSync(logoPath);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
 
     return uploadResult; // Return the saved file name
   }
-}
 
+  private async verifyModels(models: string[]): Promise<{ model: Types.ObjectId }[]> {
+    return (
+      await Promise.all(
+        models.map(async (model: string) => {
+          const existsModel = await Model.findById(model);
+          if (existsModel) {
+            return { model: new Types.ObjectId(model) }; 
+          }
+          return null;
+        })
+      )
+    ).filter(Boolean) as { model: Types.ObjectId }[];
+  }
+
+  
+}
 // Exporting the AdService class to be used in other parts of the application
 export default AdService;

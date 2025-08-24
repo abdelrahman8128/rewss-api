@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const AdSchema = new mongoose_1.Schema({
+    userId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "User",
+        required: [true, "User is required"],
+        index: true,
+    },
     title: {
         type: String,
         required: [true, "Ad title is required"],
@@ -49,12 +55,23 @@ const AdSchema = new mongoose_1.Schema({
             ref: "AdImage",
         },
     ],
+    stock: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Stock",
+        index: true,
+    },
     status: {
         type: String,
         enum: ["active", "pending", "deleted"],
         default: "pending",
         index: true,
     },
+    price: {
+        type: Number,
+        required: [true, "Ad price is required"],
+        min: [0, "Price cannot be negative"],
+        index: true,
+    }
 }, {
     timestamps: true,
 });

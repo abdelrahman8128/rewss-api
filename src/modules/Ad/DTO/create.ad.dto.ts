@@ -6,6 +6,9 @@ import {
   MaxLength,
   MinLength,
   IsMongoId,
+  IsNumber,
+  IsDateString,
+  Min,
 } from "class-validator";
 import { Transform } from "class-transformer";
 export class CreateAdDto {
@@ -38,4 +41,67 @@ export class CreateAdDto {
   @IsOptional()
   @IsString()
   manufacturedCountry?: string;
+
+  @IsOptional()
+  @IsMongoId({ each: true })
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+    return Array.isArray(value) ? value : [value];
+  })
+  album?: string[];
+
+  // Stock-related fields
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalQuantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  initialStock?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  location?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  warehouseSection?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minimumStockLevel?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maximumStockLevel?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  unitCost?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  supplier?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  batchNumber?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expiryDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  stockNotes?: string;
 }

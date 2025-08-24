@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const stock_controller_1 = require("./stock.controller");
+const router = (0, express_1.Router)();
+router.get("/ad/:adId", stock_controller_1.getStockByAdId);
+router.get("/ad/:adId/details", stock_controller_1.getAdWithStock);
+router.put("/ad/:adId/adjust", stock_controller_1.adjustStock);
+router.post("/ad/:adId/reserve", stock_controller_1.reserveStock);
+router.post("/ad/:adId/buy", stock_controller_1.buyStock);
+router.get("/ad/:adId/activity", stock_controller_1.getStockActivity);
+router.post("/ad/:adId", stock_controller_1.createStock);
+exports.default = router;

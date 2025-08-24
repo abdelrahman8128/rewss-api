@@ -1,19 +1,20 @@
-import { model, Schema, Document } from "mongoose";
+import { model, Schema, Document,Types } from "mongoose";
 
 export interface IAd extends Document {
-  userId: Schema.Types.ObjectId;
-  _id: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
+  _id: Types.ObjectId;
   title: string;
   slug: string;
   models: {
-    model: Schema.Types.ObjectId; // Reference to the Model schema
+    model: Types.ObjectId; // Reference to the Model schema
     // year: number
   }[]; // List of objects containing model and year
   condition: string;
   manufacturedCountry: string;
   description: string;
-  thumbnail: Schema.Types.ObjectId; // URL for thumbnail image
-  album: Schema.Types.ObjectId[]; // Array of image URLs
+  thumbnail?: Types.ObjectId; // URL for thumbnail image
+  album: Types.ObjectId[]; // Array of image URLs
+  stock?: Types.ObjectId; // Reference to Stock schema
   status: "active" | "pending" | "deleted";
   price: number;
   createdAt?: Date; // Optional field for creation timestamp
@@ -80,6 +81,11 @@ const AdSchema = new Schema<IAd>(
         ref: "AdImage", // Assuming you have a ProductImage model
       },
     ],
+    stock: {
+      type: Schema.Types.ObjectId,
+      ref: "Stock",
+      index: true,
+    },
     status: {
       type: String,
       enum: ["active", "pending", "deleted"],

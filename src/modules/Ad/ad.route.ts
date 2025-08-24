@@ -1,4 +1,4 @@
-import { createAdController } from "./ad.controller";
+import { createAdController,updateAdController } from "./ad.controller";
 import express, { Router } from "express";
 import { validationMiddleware } from "../../Middleware/validation/validation.middleware";
 import { CreateAdDto } from "./DTO/create.ad.dto";
@@ -17,12 +17,13 @@ router.post(
   validationMiddleware(CreateAdDto),
   createAdController
 );
-// router.patch(
-//   "/update-ad/:id",
-//   authorize(["admin"]),
-//   validationMiddleware(CreateAdDto, true),
-//   updateAd
-// );
+  
+router.patch(
+  "/update-ad/:id",
+  authorize(["admin", "seller"]),
+  validationMiddleware(CreateAdDto, true),
+  updateAdController
+);
 // router.delete("/delete-ad/:id", authorize(["admin"]), deleteAd);
 
 export default router;

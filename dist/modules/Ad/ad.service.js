@@ -43,7 +43,12 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const Ad_image_schema_1 = __importDefault(require("../../Schema/AdImage/Ad.image.schema"));
 const model_schema_1 = __importDefault(require("../../Schema/Model/model.schema"));
+const mongoose_1 = require("mongoose");
+const stock_service_1 = __importDefault(require("../Stock/service/stock.service"));
 class AdService {
+    constructor() {
+        this.stockService = new stock_service_1.default();
+    }
     async create(req) {
         const albumFiles = Array.isArray(req.files)
             ? req.files.filter((f) => f.fieldname === "album")
@@ -58,14 +63,9 @@ class AdService {
             throw new Error("A thumbnail image is required");
         }
         const adData = req.body;
-        const verifiedModels = (await Promise.all(adData.model.map(async (model) => {
-            const existsModel = await model_schema_1.default.findById(model);
-            if (existsModel) {
-                return { model };
-            }
-            return null;
-        }))).filter(Boolean);
+        const verifiedModels = await this.verifyModels(adData.model);
         const ad = await ad_schema_1.default.create({
+            userId: req.user._id,
             title: adData.title,
             description: adData.description,
             price: adData.price,
@@ -79,7 +79,7 @@ class AdService {
             imageId: thumbnailImageData.key,
             imageUrl: thumbnailImageData.url,
         });
-        ad.thumbnail = thumbnailImage._id;
+        ad.thumbnail = new mongoose_1.Types.ObjectId(thumbnailImage._id.toString());
         for (const imageFile of albumFiles) {
             const imageData = await this.saveImage(imageFile, ad._id.toString());
             const adImage = await Ad_image_schema_1.default.create({
@@ -87,19 +87,128 @@ class AdService {
                 imageId: imageData.key,
                 imageUrl: imageData.url,
             });
-            ad.album.push(adImage._id);
+            ad.album.push(new mongoose_1.Types.ObjectId(adImage._id.toString()));
+        }
+        if (adData.initialStock || adData.totalQuantity) {
+            const stockData = {
+                available: adData.totalQuantity || adData.initialStock || 0,
+                reserved: 0,
+                bought: 0,
+            };
+            const stock = await this.stockService.createStock(ad._id, stockData, {
+                userId: req.user._id,
+                action: "created",
+                description: `Initial stock created for ad: ${ad.title}`,
+                reason: "Ad creation",
+                metadata: { adTitle: ad.title },
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+            });
+            ad.stock = stock._id;
         }
         await ad.save();
         await ad.populate([
-            { path: "album", select: "imageUrl -_id" },
+            { path: "album", select: "imageUrl" },
             {
                 path: "models.model",
                 populate: { path: "brand", select: "name logo -_id" },
             },
             {
                 path: "thumbnail",
-                select: "imageUrl -_id"
+                select: "imageUrl",
+            },
+            {
+                path: "stock",
+                select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+            },
+        ]);
+        return ad;
+    }
+    async update(req) {
+        const adId = req.params.id;
+        const ad = await ad_schema_1.default.findById(adId);
+        if (!ad) {
+            throw new Error("Ad not found");
+        }
+        if (req.user.role == "seller" &&
+            ad.userId.toString() !== req.user._id.toString()) {
+            throw new Error("You are not authorized to update this ad");
+        }
+        const adData = req.body;
+        const albumFiles = Array.isArray(req.files)
+            ? req.files.filter((f) => f.fieldname === "album")
+            : [];
+        const thumbnailFile = Array.isArray(req.files)
+            ? req.files.find((f) => f.fieldname === "thumbnail")
+            : null;
+        if (thumbnailFile) {
+            const oldThumbnail = await Ad_image_schema_1.default.findById(ad.thumbnail);
+            if (oldThumbnail) {
+                const s3Service = new s3_service_1.S3Service();
+                await s3Service.delete(oldThumbnail.imageId);
+                await oldThumbnail.deleteOne();
             }
+        }
+        if (albumFiles.length || req.body.album) {
+            const oldAlbumImages = await Ad_image_schema_1.default.find({ adId: ad._id });
+            const s3Service = new s3_service_1.S3Service();
+            const oldAlbumImagesToRemove = oldAlbumImages.filter((i) => !req.body.album?.includes(i._id.toString()));
+            await Promise.all(oldAlbumImagesToRemove.map(async (i) => {
+                await s3Service.delete(i.imageId);
+                await i.deleteOne();
+            }));
+        }
+        if (thumbnailFile) {
+            const thumbnailImageData = await this.saveImage(thumbnailFile, ad._id.toString());
+            const thumbnailImage = await Ad_image_schema_1.default.create({
+                adId: ad._id,
+                imageId: thumbnailImageData.key,
+                imageUrl: thumbnailImageData.url,
+            });
+            ad.thumbnail = new mongoose_1.Types.ObjectId(thumbnailImage._id.toString());
+        }
+        if (albumFiles.length) {
+            const imagesPromises = albumFiles.map(async (file) => {
+                const imageData = await this.saveImage(file, ad._id.toString());
+                const image = await Ad_image_schema_1.default.create({
+                    adId: ad._id,
+                    imageId: imageData.key,
+                    imageUrl: imageData.url,
+                });
+                return image;
+            });
+            const images = await Promise.all(imagesPromises);
+            ad.album = [...ad.album, ...images.map((i) => i._id)];
+        }
+        if (adData.title)
+            ad.title = adData.title;
+        if (adData.description)
+            ad.description = adData.description;
+        if (adData.price)
+            ad.price = adData.price;
+        if (adData.condition)
+            ad.condition = adData.condition;
+        if (adData.manufacturedCountry)
+            ad.manufacturedCountry = adData.manufacturedCountry;
+        if (adData.model) {
+            const verifiedModels = await this.verifyModels(adData.model);
+            ad.models = verifiedModels;
+        }
+        await ad.save();
+        await ad.populate([
+            { path: "album", select: "imageUrl " },
+            {
+                path: "models.model",
+                populate: { path: "brand", select: "name logo -_id" },
+            },
+            {
+                path: "thumbnail",
+                select: "imageUrl",
+            },
+            {
+                path: "stock",
+                select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+            },
         ]);
         return ad;
     }
@@ -114,12 +223,12 @@ class AdService {
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
-        const logoFileName = `${adId}-logo-${Date.now()}.${file.mimetype.split("/")[1]}`;
-        const logoPath = path.join(uploadDir, logoFileName);
-        fs.writeFileSync(logoPath, file.buffer);
+        const fileName = `${adId}-${Date.now()}.${file.mimetype.split("/")[1]}`;
+        const filePath = path.join(uploadDir, fileName);
+        fs.writeFileSync(filePath, file.buffer);
         try {
             const sharp = (await import("sharp")).default;
-            let pipeline = sharp(logoPath).rotate();
+            let pipeline = sharp(filePath).rotate();
             switch (file.mimetype) {
                 case "image/jpeg":
                 case "image/jpg":
@@ -138,7 +247,7 @@ class AdService {
                     break;
             }
             const optimizedBuffer = await pipeline.toBuffer();
-            fs.writeFileSync(logoPath, optimizedBuffer);
+            fs.writeFileSync(filePath, optimizedBuffer);
         }
         catch (err) {
             console.warn("Logo optimization failed, proceeding with original file:", err);
@@ -146,16 +255,25 @@ class AdService {
         const s3Service = new s3_service_1.S3Service();
         const params = {
             Bucket: process.env.S3_BUCKET,
-            Key: `ads/${logoFileName}`,
-            Body: fs.createReadStream(logoPath),
+            Key: `ads/${fileName}`,
+            Body: fs.createReadStream(filePath),
             ContentType: file.mimetype,
             ACL: "public-read",
         };
         const uploadResult = await s3Service.upload(params);
-        if (fs.existsSync(logoPath)) {
-            fs.unlinkSync(logoPath);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
         }
         return uploadResult;
+    }
+    async verifyModels(models) {
+        return (await Promise.all(models.map(async (model) => {
+            const existsModel = await model_schema_1.default.findById(model);
+            if (existsModel) {
+                return { model: new mongoose_1.Types.ObjectId(model) };
+            }
+            return null;
+        }))).filter(Boolean);
     }
 }
 exports.AdService = AdService;
