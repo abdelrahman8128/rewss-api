@@ -84,9 +84,9 @@ export const createStock = asyncHandler(async (req: Request, res: Response): Pro
   }
 
   const stockData = {
-    available: available || 0,
-    reserved: reserved || 0,
-    bought: bought || 0
+    availableQuantity: available || 0,
+    reservedQuantity: reserved || 0,
+    soldQuantity: bought || 0
   };
 
   const newStock = await stockService.createStock(new Types.ObjectId(adId), stockData, {

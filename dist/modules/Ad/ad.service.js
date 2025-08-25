@@ -89,23 +89,23 @@ class AdService {
             });
             ad.album.push(new mongoose_1.Types.ObjectId(adImage._id.toString()));
         }
-        if (adData.initialStock || adData.totalQuantity) {
-            const stockData = {
-                available: adData.totalQuantity || adData.initialStock || 0,
-                reserved: 0,
-                bought: 0,
-            };
-            const stock = await this.stockService.createStock(ad._id, stockData, {
-                userId: req.user._id,
-                action: "created",
-                description: `Initial stock created for ad: ${ad.title}`,
-                reason: "Ad creation",
-                metadata: { adTitle: ad.title },
-                ipAddress: req.ip,
-                userAgent: req.get('User-Agent'),
-            });
-            ad.stock = stock._id;
-        }
+        const stockData = {
+            availableQuantity: adData.availableStock || 0,
+            reservedQuantity: 0,
+            soldQuantity: 0,
+            minimumOrderQuantity: adData.minimumStockQuantity || 1,
+            status: 'available',
+        };
+        const stock = await this.stockService.createStock(ad._id, stockData, {
+            userId: req.user._id,
+            action: "created",
+            description: `Initial stock created for ad: ${ad.title}`,
+            reason: "Ad creation",
+            metadata: { adTitle: ad.title },
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+        });
+        ad.stock = stock._id;
         await ad.save();
         await ad.populate([
             { path: "album", select: "imageUrl" },

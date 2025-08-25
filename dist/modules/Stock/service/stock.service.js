@@ -14,9 +14,11 @@ class StockService {
         }
         const stock = await stock_schema_1.default.create({
             adId,
-            available: stockData.available || 0,
-            reserved: stockData.reserved || 0,
-            bought: stockData.bought || 0,
+            availableQuantity: stockData.availableQuantity || 0,
+            reservedQuantity: stockData.reservedQuantity || 0,
+            soldQuantity: stockData.soldQuantity || 0,
+            minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
+            status: stockData.status || 'available',
         });
         await this.logActivity(stock._id, adId, logData, []);
         return stock;
@@ -33,17 +35,25 @@ class StockService {
             throw new Error("Stock not found");
         }
         const changes = [];
-        if (adjustmentData.available !== undefined && adjustmentData.available !== stock.available) {
-            changes.push({ field: "available", oldValue: stock.available, newValue: adjustmentData.available });
-            stock.available = adjustmentData.available;
+        if (adjustmentData.availableQuantity !== undefined && adjustmentData.availableQuantity !== stock.availableQuantity) {
+            changes.push({ field: "availableQuantity", oldValue: stock.availableQuantity, newValue: adjustmentData.availableQuantity });
+            stock.availableQuantity = adjustmentData.availableQuantity;
         }
-        if (adjustmentData.reserved !== undefined && adjustmentData.reserved !== stock.reserved) {
-            changes.push({ field: "reserved", oldValue: stock.reserved, newValue: adjustmentData.reserved });
-            stock.reserved = adjustmentData.reserved;
+        if (adjustmentData.reservedQuantity !== undefined && adjustmentData.reservedQuantity !== stock.reservedQuantity) {
+            changes.push({ field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: adjustmentData.reservedQuantity });
+            stock.reservedQuantity = adjustmentData.reservedQuantity;
         }
-        if (adjustmentData.bought !== undefined && adjustmentData.bought !== stock.bought) {
-            changes.push({ field: "bought", oldValue: stock.bought, newValue: adjustmentData.bought });
-            stock.bought = adjustmentData.bought;
+        if (adjustmentData.soldQuantity !== undefined && adjustmentData.soldQuantity !== stock.soldQuantity) {
+            changes.push({ field: "soldQuantity", oldValue: stock.soldQuantity, newValue: adjustmentData.soldQuantity });
+            stock.soldQuantity = adjustmentData.soldQuantity;
+        }
+        if (adjustmentData.minimumOrderQuantity !== undefined && adjustmentData.minimumOrderQuantity !== stock.minimumOrderQuantity) {
+            changes.push({ field: "minimumOrderQuantity", oldValue: stock.minimumOrderQuantity, newValue: adjustmentData.minimumOrderQuantity });
+            stock.minimumOrderQuantity = adjustmentData.minimumOrderQuantity;
+        }
+        if (adjustmentData.status !== undefined && adjustmentData.status !== stock.status) {
+            changes.push({ field: "status", oldValue: stock.status, newValue: adjustmentData.status });
+            stock.status = adjustmentData.status;
         }
         await stock.save();
         await this.logActivity(stockId, stock.adId, { ...logData, action: "adjusted" }, changes);
@@ -54,17 +64,17 @@ class StockService {
         if (!stock) {
             throw new Error("Stock not found");
         }
-        if (stock.available < quantity) {
+        if (stock.availableQuantity < quantity) {
             throw new Error("Insufficient stock available for reservation");
         }
-        const previousAvailable = stock.available;
-        const previousReserved = stock.reserved;
-        stock.available -= quantity;
-        stock.reserved += quantity;
+        const previousAvailable = stock.availableQuantity;
+        const previousReserved = stock.reservedQuantity;
+        stock.availableQuantity -= quantity;
+        stock.reservedQuantity += quantity;
         await stock.save();
         const changes = [
-            { field: "available", oldValue: previousAvailable, newValue: stock.available },
-            { field: "reserved", oldValue: previousReserved, newValue: stock.reserved },
+            { field: "availableQuantity", oldValue: previousAvailable, newValue: stock.availableQuantity },
+            { field: "reservedQuantity", oldValue: previousReserved, newValue: stock.reservedQuantity },
         ];
         await this.logActivity(stockId, stock.adId, { ...logData, action: "reserved" }, changes);
         return stock;
@@ -74,17 +84,17 @@ class StockService {
         if (!stock) {
             throw new Error("Stock not found");
         }
-        if (stock.reserved < quantity) {
+        if (stock.reservedQuantity < quantity) {
             throw new Error("Insufficient reserved stock for purchase");
         }
-        const previousReserved = stock.reserved;
-        const previousBought = stock.bought;
-        stock.reserved -= quantity;
-        stock.bought += quantity;
+        const previousReserved = stock.reservedQuantity;
+        const previousSold = stock.soldQuantity;
+        stock.reservedQuantity -= quantity;
+        stock.soldQuantity += quantity;
         await stock.save();
         const changes = [
-            { field: "reserved", oldValue: previousReserved, newValue: stock.reserved },
-            { field: "bought", oldValue: previousBought, newValue: stock.bought },
+            { field: "reservedQuantity", oldValue: previousReserved, newValue: stock.reservedQuantity },
+            { field: "soldQuantity", oldValue: previousSold, newValue: stock.soldQuantity },
         ];
         await this.logActivity(stockId, stock.adId, { ...logData, action: "bought" }, changes);
         return stock;

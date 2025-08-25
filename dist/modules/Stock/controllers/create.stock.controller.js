@@ -40,9 +40,9 @@ exports.createStock = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     const stockData = {
-        available: available || 0,
-        reserved: reserved || 0,
-        bought: bought || 0
+        availableQuantity: available || 0,
+        reservedQuantity: reserved || 0,
+        soldQuantity: bought || 0
     };
     const newStock = await stockService.createStock(new mongoose_1.Types.ObjectId(adId), stockData, {
         userId,

@@ -12,12 +12,7 @@ export class CreateStockDto {
   @IsNotEmpty()
   @IsNumber()
   @Min(0)
-  totalQuantity: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  availableQuantity?: number;
+  availableQuantity: number;
 
   @IsOptional()
   @IsNumber()
@@ -30,6 +25,15 @@ export class CreateStockDto {
   soldQuantity?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minimumOrderQuantity?: number;
+
+  @IsOptional()
+  @IsString()
+  status?: 'available' | 'out_of_stock' | 'low_stock';
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   location?: string;
@@ -39,15 +43,6 @@ export class CreateStockDto {
   @MaxLength(100)
   warehouseSection?: string;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  minimumStockLevel?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  maximumStockLevel?: number;
 
   @IsOptional()
   @IsNumber()
@@ -78,11 +73,6 @@ export class UpdateStockDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  totalQuantity?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   availableQuantity?: number;
 
   @IsOptional()
@@ -96,6 +86,15 @@ export class UpdateStockDto {
   soldQuantity?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minimumOrderQuantity?: number;
+
+  @IsOptional()
+  @IsString()
+  status?: 'available' | 'out_of_stock' | 'low_stock';
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   location?: string;
@@ -105,15 +104,6 @@ export class UpdateStockDto {
   @MaxLength(100)
   warehouseSection?: string;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  minimumStockLevel?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  maximumStockLevel?: number;
 
   @IsOptional()
   @IsNumber()

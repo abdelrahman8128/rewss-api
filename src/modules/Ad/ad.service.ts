@@ -70,12 +70,12 @@ export class AdService {
       ad.album.push(new Types.ObjectId(adImage._id.toString()));
     }
 
-    // Create initial stock record if stock data is provided
-    if (adData.initialStock || adData.totalQuantity) {
       const stockData = {
-        available: adData.totalQuantity || adData.initialStock || 0,
-        reserved: 0,
-        bought: 0,
+        availableQuantity: adData.availableStock || 0,
+        reservedQuantity: 0,
+        soldQuantity: 0,
+        minimumOrderQuantity: adData.minimumStockQuantity || 1,
+        status: 'available' as const,
       };
 
       const stock = await this.stockService.createStock(
@@ -93,7 +93,7 @@ export class AdService {
       );
 
       ad.stock = stock._id;
-    }
+    
 
     await ad.save();
     await ad.populate([

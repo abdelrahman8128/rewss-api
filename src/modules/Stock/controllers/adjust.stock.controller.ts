@@ -83,7 +83,11 @@ export const adjustStock = asyncHandler(async (req: Request, res: Response): Pro
     return;
   }
 
-  const adjustments = { available, reserved, bought };
+  const adjustments = { 
+    availableQuantity: available, 
+    reservedQuantity: reserved, 
+    soldQuantity: bought 
+  };
   const updatedStock = await stockService.adjustStock(ad.stock, adjustments, {
     userId,
     action: "adjusted",
