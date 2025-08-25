@@ -65,6 +65,8 @@ export class StockService {
   async updateStock(req: any): Promise<IStock> {
     const { adId } = req.params;
     const stockData = req.body;
+
+    
     
     // Check if ad exists and belongs to seller
     const ad = await Ad.findById(adId);
