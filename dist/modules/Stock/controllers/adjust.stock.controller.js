@@ -13,14 +13,6 @@ exports.adjustStock = (0, express_async_handler_1.default)(async (req, res) => {
     const { adId } = req.params;
     const { available, reserved, bought, reason } = req.body;
     const userId = req.user._id;
-    if (available === undefined && reserved === undefined && bought === undefined) {
-        res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({
-            code: http_status_codes_1.StatusCodes.BAD_REQUEST,
-            status: "Bad Request",
-            message: "At least one quantity field (available, reserved, bought) must be provided"
-        });
-        return;
-    }
     const ad = await ad_schema_1.default.findById(adId);
     if (!ad) {
         res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({

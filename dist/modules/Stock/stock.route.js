@@ -2,12 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const stock_controller_1 = require("./stock.controller");
+const validation_middleware_1 = require("../../Middleware/validation/validation.middleware");
+const stock_dto_1 = require("./DTO/stock.dto");
+const authrization_middleware_1 = require("../../Middleware/authrization/authrization.middleware");
 const router = (0, express_1.Router)();
-router.get("/ad/:adId", stock_controller_1.getStockByAdId);
-router.get("/ad/:adId/details", stock_controller_1.getAdWithStock);
-router.put("/ad/:adId/adjust", stock_controller_1.adjustStock);
-router.post("/ad/:adId/reserve", stock_controller_1.reserveStock);
-router.post("/ad/:adId/buy", stock_controller_1.buyStock);
-router.get("/ad/:adId/activity", stock_controller_1.getStockActivity);
-router.post("/ad/:adId", stock_controller_1.createStock);
+router.get("/ad/:adId", (0, authrization_middleware_1.authorize)(["admin", "seller"]), stock_controller_1.getStockController);
+router.put("/ad/:adId", (0, authrization_middleware_1.authorize)(["admin", "seller"]), (0, validation_middleware_1.validationMiddleware)(stock_dto_1.StockDto, true), stock_controller_1.updateStockController);
 exports.default = router;

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockService = void 0;
 const stock_schema_1 = __importDefault(require("../../../Schema/Stock/stock.schema"));
+const ad_schema_1 = __importDefault(require("../../../Schema/Ad/ad.schema"));
 const activity_log_schema_1 = __importDefault(require("../../../Schema/ActivityLog/activity-log.schema"));
 class StockService {
     async createStock(adId, stockData, logData) {
@@ -23,88 +24,77 @@ class StockService {
         await this.logActivity(stock._id, adId, logData, []);
         return stock;
     }
-    async getStockByAdId(adId) {
-        return await stock_schema_1.default.findOne({ adId });
-    }
-    async getStockById(stockId) {
-        return await stock_schema_1.default.findById(stockId);
-    }
-    async adjustStock(stockId, adjustmentData, logData) {
-        const stock = await stock_schema_1.default.findById(stockId);
+    async getStockByAd(req) {
+        const { adId } = req.params;
+        const ad = await ad_schema_1.default.findById(adId);
+        if (!ad) {
+            throw new Error("Ad not found");
+        }
+        if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
+            throw new Error("You can only view stock for your own ads");
+        }
+        const stock = await stock_schema_1.default.findOne({ adId }).populate({
+            path: "adId",
+            select: "title description price"
+        });
         if (!stock) {
-            throw new Error("Stock not found");
+            throw new Error("Stock not found for this ad");
+        }
+        return stock;
+    }
+    async updateStock(req) {
+        const { adId } = req.params;
+        const stockData = req.body;
+        const ad = await ad_schema_1.default.findById(adId);
+        if (!ad) {
+            throw new Error("Ad not found");
+        }
+        if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
+            throw new Error("You can only update stock for your own ads");
+        }
+        if (!ad.stock) {
+            throw new Error("No stock record found for this ad");
+        }
+        const stock = await stock_schema_1.default.findById(ad.stock);
+        if (!stock) {
+            throw new Error("Stock record not found");
         }
         const changes = [];
-        if (adjustmentData.availableQuantity !== undefined && adjustmentData.availableQuantity !== stock.availableQuantity) {
-            changes.push({ field: "availableQuantity", oldValue: stock.availableQuantity, newValue: adjustmentData.availableQuantity });
-            stock.availableQuantity = adjustmentData.availableQuantity;
+        if (stockData.availableQuantity !== undefined && stockData.availableQuantity !== stock.availableQuantity) {
+            changes.push({ field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stockData.availableQuantity });
+            stock.availableQuantity = stockData.availableQuantity;
         }
-        if (adjustmentData.reservedQuantity !== undefined && adjustmentData.reservedQuantity !== stock.reservedQuantity) {
-            changes.push({ field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: adjustmentData.reservedQuantity });
-            stock.reservedQuantity = adjustmentData.reservedQuantity;
+        if (stockData.reservedQuantity !== undefined && stockData.reservedQuantity !== stock.reservedQuantity) {
+            changes.push({ field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stockData.reservedQuantity });
+            stock.reservedQuantity = stockData.reservedQuantity;
         }
-        if (adjustmentData.soldQuantity !== undefined && adjustmentData.soldQuantity !== stock.soldQuantity) {
-            changes.push({ field: "soldQuantity", oldValue: stock.soldQuantity, newValue: adjustmentData.soldQuantity });
-            stock.soldQuantity = adjustmentData.soldQuantity;
+        if (stockData.soldQuantity !== undefined && stockData.soldQuantity !== stock.soldQuantity) {
+            changes.push({ field: "soldQuantity", oldValue: stock.soldQuantity, newValue: stockData.soldQuantity });
+            stock.soldQuantity = stockData.soldQuantity;
         }
-        if (adjustmentData.minimumOrderQuantity !== undefined && adjustmentData.minimumOrderQuantity !== stock.minimumOrderQuantity) {
-            changes.push({ field: "minimumOrderQuantity", oldValue: stock.minimumOrderQuantity, newValue: adjustmentData.minimumOrderQuantity });
-            stock.minimumOrderQuantity = adjustmentData.minimumOrderQuantity;
-        }
-        if (adjustmentData.status !== undefined && adjustmentData.status !== stock.status) {
-            changes.push({ field: "status", oldValue: stock.status, newValue: adjustmentData.status });
-            stock.status = adjustmentData.status;
+        if (stockData.minimumOrderQuantity !== undefined && stockData.minimumOrderQuantity !== stock.minimumOrderQuantity) {
+            changes.push({ field: "minimumOrderQuantity", oldValue: stock.minimumOrderQuantity, newValue: stockData.minimumOrderQuantity });
+            stock.minimumOrderQuantity = stockData.minimumOrderQuantity;
         }
         await stock.save();
-        await this.logActivity(stockId, stock.adId, { ...logData, action: "adjusted" }, changes);
+        await this.logActivity(stock._id, stock.adId, {
+            userId: req.user._id,
+            action: "adjusted",
+            description: `Stock updated for ad: ${ad.title}`,
+            reason: stockData.reason || "Stock update",
+            metadata: {
+                adTitle: ad.title,
+                changes,
+                userRole: req.user.role
+            },
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+        }, changes);
+        await stock.populate({
+            path: "adId",
+            select: "title description price"
+        });
         return stock;
-    }
-    async reserveStock(stockId, quantity, logData) {
-        const stock = await stock_schema_1.default.findById(stockId);
-        if (!stock) {
-            throw new Error("Stock not found");
-        }
-        if (stock.availableQuantity < quantity) {
-            throw new Error("Insufficient stock available for reservation");
-        }
-        const previousAvailable = stock.availableQuantity;
-        const previousReserved = stock.reservedQuantity;
-        stock.availableQuantity -= quantity;
-        stock.reservedQuantity += quantity;
-        await stock.save();
-        const changes = [
-            { field: "availableQuantity", oldValue: previousAvailable, newValue: stock.availableQuantity },
-            { field: "reservedQuantity", oldValue: previousReserved, newValue: stock.reservedQuantity },
-        ];
-        await this.logActivity(stockId, stock.adId, { ...logData, action: "reserved" }, changes);
-        return stock;
-    }
-    async buyStock(stockId, quantity, logData) {
-        const stock = await stock_schema_1.default.findById(stockId);
-        if (!stock) {
-            throw new Error("Stock not found");
-        }
-        if (stock.reservedQuantity < quantity) {
-            throw new Error("Insufficient reserved stock for purchase");
-        }
-        const previousReserved = stock.reservedQuantity;
-        const previousSold = stock.soldQuantity;
-        stock.reservedQuantity -= quantity;
-        stock.soldQuantity += quantity;
-        await stock.save();
-        const changes = [
-            { field: "reservedQuantity", oldValue: previousReserved, newValue: stock.reservedQuantity },
-            { field: "soldQuantity", oldValue: previousSold, newValue: stock.soldQuantity },
-        ];
-        await this.logActivity(stockId, stock.adId, { ...logData, action: "bought" }, changes);
-        return stock;
-    }
-    async getStockActivity(stockId, limit = 50, offset = 0) {
-        return await activity_log_schema_1.default.find({ stockId })
-            .populate("userId", "name email")
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .skip(offset);
     }
     async logActivity(stockId, adId, logData, changes = []) {
         await activity_log_schema_1.default.create({
@@ -119,15 +109,6 @@ class StockService {
             ipAddress: logData.ipAddress,
             userAgent: logData.userAgent,
         });
-    }
-    async deleteStock(stockId, logData) {
-        const stock = await stock_schema_1.default.findById(stockId);
-        if (!stock) {
-            throw new Error("Stock not found");
-        }
-        await this.logActivity(stockId, stock.adId, { ...logData, action: "adjusted", description: "Stock record deleted" }, [{ field: "deleted", oldValue: false, newValue: true }]);
-        await stock_schema_1.default.findByIdAndDelete(stockId);
-        return true;
     }
 }
 exports.StockService = StockService;

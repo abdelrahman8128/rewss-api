@@ -13,14 +13,6 @@ exports.buyStock = (0, express_async_handler_1.default)(async (req, res) => {
     const { adId } = req.params;
     const { quantity, orderId, reason } = req.body;
     const userId = req.user._id;
-    if (!quantity || quantity <= 0) {
-        res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({
-            code: http_status_codes_1.StatusCodes.BAD_REQUEST,
-            status: "Bad Request",
-            message: "Valid quantity is required"
-        });
-        return;
-    }
     const ad = await ad_schema_1.default.findById(adId);
     if (!ad) {
         res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({

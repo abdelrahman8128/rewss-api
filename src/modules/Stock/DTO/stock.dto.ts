@@ -8,68 +8,8 @@ import {
   MaxLength,
 } from "class-validator";
 
-export class CreateStockDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  availableQuantity: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  reservedQuantity?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  soldQuantity?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  minimumOrderQuantity?: number;
-
-  @IsOptional()
-  @IsString()
-  status?: 'available' | 'out_of_stock' | 'low_stock';
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  location?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  warehouseSection?: string;
-
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  unitCost?: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  supplier?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  batchNumber?: string;
-
-  @IsOptional()
-  @IsDateString()
-  expiryDate?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  notes?: string;
-}
-
-export class UpdateStockDto {
+export class StockDto {
+  // Stock quantities
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -90,6 +30,29 @@ export class UpdateStockDto {
   @Min(0)
   minimumOrderQuantity?: number;
 
+  // For adjust operations (alternative field names)
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  available?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  reserved?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  bought?: number;
+
+  // For quantity-based operations (reserve, buy, etc.)
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  quantity?: number;
+
+  // Status and metadata
   @IsOptional()
   @IsString()
   status?: 'available' | 'out_of_stock' | 'low_stock';
@@ -103,7 +66,6 @@ export class UpdateStockDto {
   @IsString()
   @MaxLength(100)
   warehouseSection?: string;
-
 
   @IsOptional()
   @IsNumber()
@@ -129,85 +91,11 @@ export class UpdateStockDto {
   @MaxLength(500)
   notes?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  reason?: string;
-}
-
-export class RestockDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  quantity: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  reason?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  supplier?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  batchNumber?: string;
-}
-
-export class ReserveStockDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  quantity: number;
-
+  // Common fields for all operations
   @IsOptional()
   @IsString()
   @MaxLength(100)
   orderId?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  reason?: string;
-}
-
-export class SellStockDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  quantity: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  orderId?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  reason?: string;
-}
-
-export class CancelReservationDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  quantity: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  reason?: string;
-}
-
-export class AdjustStockDto {
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  newQuantity: number;
 
   @IsOptional()
   @IsString()

@@ -23,8 +23,7 @@ import { Types } from "mongoose";
  * // Request: GET /stock/ad/64a7b8c9d4e5f6789a0b1c2d
  * // Response:
  * {
- *   "code": 200,
- *   "status": "Success",
+ *   "message": "Stock retrieved successfully",
  *   "data": {
  *     "_id": "64a7b8c9d4e5f6789a0b1c2e",
  *     "adId": "64a7b8c9d4e5f6789a0b1c2d",
@@ -36,24 +35,18 @@ import { Types } from "mongoose";
  *   }
  * }
  */
-export const getStockByAdId = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const getStockController = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const stockService = new StockService();
 
-  const { adId } = req.params;
-  const stock = await stockService.getStockByAdId(new Types.ObjectId(adId));
-  
-  if (!stock) {
-    res.status(StatusCodes.NOT_FOUND).json({
-      code: StatusCodes.NOT_FOUND,
-      status: "Not Found",
-      message: "Stock not found for this ad"
+  try {
+    const stock = await stockService.getStockByAd(req);
+    res.status(StatusCodes.OK).json({
+      message: "Stock retrieved successfully",
+      data: stock,
     });
-    return;
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
   }
-
-  res.status(StatusCodes.OK).json({
-    code: StatusCodes.OK,
-    status: "Success",
-    data: stock
-  });
 });
