@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockService = void 0;
 const stock_schema_1 = __importDefault(require("../../../Schema/Stock/stock.schema"));
 const ad_schema_1 = __importDefault(require("../../../Schema/Ad/ad.schema"));
-const activity_log_schema_1 = __importDefault(require("../../../Schema/ActivityLog/activity-log.schema"));
+const activity_log_service_1 = __importDefault(require("../../ActivityLog/activity-log.service"));
 const mongoose_1 = require("mongoose");
 class StockService {
     async createStock(adId, stockData, logData) {
@@ -22,7 +22,7 @@ class StockService {
             minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
             status: stockData.status || 'available',
         });
-        await this.logActivity(stock._id, adId, logData, []);
+        await activity_log_service_1.default.logActivity(logData.userId, "stock_created", logData.description, { ...logData.metadata, stockId: stock._id, adId }, logData.ipAddress, logData.userAgent);
         return stock;
     }
     async getStockByAd(req) {
@@ -106,19 +106,14 @@ class StockService {
                 minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
             });
             await ad_schema_1.default.findByIdAndUpdate(adId, { stock: stock._id });
-            await this.logActivity(stock._id, stock.adId, {
-                userId: req.user._id,
-                action: "created",
-                description: `Stock created for ad: ${ad.title}`,
-                reason: stockData.reason || "Stock creation during update",
-                metadata: {
-                    adTitle: ad.title,
-                    userRole: req.user.role,
-                    createdDuringUpdate: true
-                },
-                ipAddress: req.ip,
-                userAgent: req.get('User-Agent'),
-            }, []);
+            await activity_log_service_1.default.logActivity(req.user._id, "stock_created", `Stock created for ad: ${ad.title}`, {
+                stockId: stock._id,
+                adId: stock.adId,
+                adTitle: ad.title,
+                userRole: req.user.role,
+                createdDuringUpdate: true,
+                reason: stockData.reason || "Stock creation during update"
+            }, req.ip, req.get('User-Agent'));
             await stock.populate({
                 path: "adId",
                 select: "title description price"
@@ -148,37 +143,76 @@ class StockService {
             stock.minimumOrderQuantity = stockData.minimumOrderQuantity;
         }
         await stock.save();
-        await this.logActivity(stock._id, stock.adId, {
-            userId: req.user._id,
-            action: "adjusted",
-            description: `Stock updated for ad: ${ad.title}`,
-            reason: stockData.reason || "Stock update",
-            metadata: {
-                adTitle: ad.title,
-                changes,
-                userRole: req.user.role
-            },
-            ipAddress: req.ip,
-            userAgent: req.get('User-Agent'),
-        }, changes);
+        await activity_log_service_1.default.logActivity(req.user._id, "stock_updated", `Stock updated for ad: ${ad.title}`, {
+            stockId: stock._id,
+            adId: stock.adId,
+            adTitle: ad.title,
+            changes,
+            userRole: req.user.role,
+            reason: stockData.reason || "Stock update"
+        }, req.ip, req.get('User-Agent'));
         await stock.populate({
             path: "adId",
             select: "title description price"
         });
         return stock;
     }
-    async logActivity(stockId, adId, logData, changes = []) {
-        await activity_log_schema_1.default.create({
-            stockId,
+    async reserveStock(adId, quantity, userId, metadata, ipAddress, userAgent) {
+        const stock = await stock_schema_1.default.findOne({ adId });
+        if (!stock) {
+            throw new Error("Stock not found for this ad");
+        }
+        if (stock.availableQuantity < quantity) {
+            throw new Error("Insufficient available quantity");
+        }
+        const changes = [
+            { field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stock.availableQuantity - quantity },
+            { field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stock.reservedQuantity + quantity }
+        ];
+        stock.availableQuantity -= quantity;
+        stock.reservedQuantity += quantity;
+        await stock.save();
+        await activity_log_service_1.default.logActivity(userId, "stock_reserved", `Reserved ${quantity} units of stock`, {
+            stockId: stock._id,
             adId,
-            userId: logData.userId,
-            action: logData.action,
-            description: logData.description,
+            quantity,
             changes,
-            reason: logData.reason,
-            metadata: logData.metadata,
-            ipAddress: logData.ipAddress,
-            userAgent: logData.userAgent,
+            ...metadata
+        }, ipAddress, userAgent);
+        return stock;
+    }
+    async buyStock(adId, quantity, userId, metadata, ipAddress, userAgent) {
+        const stock = await stock_schema_1.default.findOne({ adId });
+        if (!stock) {
+            throw new Error("Stock not found for this ad");
+        }
+        if (stock.reservedQuantity < quantity) {
+            throw new Error("Insufficient reserved quantity");
+        }
+        const changes = [
+            { field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stock.reservedQuantity - quantity },
+            { field: "soldQuantity", oldValue: stock.soldQuantity, newValue: stock.soldQuantity + quantity }
+        ];
+        stock.reservedQuantity -= quantity;
+        stock.soldQuantity += quantity;
+        await stock.save();
+        await activity_log_service_1.default.logActivity(userId, "stock_purchased", `Purchased ${quantity} units of stock`, {
+            stockId: stock._id,
+            adId,
+            quantity,
+            changes,
+            ...metadata
+        }, ipAddress, userAgent);
+        return stock;
+    }
+    async getStockActivity(adId, userId, page = 1, limit = 20) {
+        const stock = await stock_schema_1.default.findOne({ adId });
+        if (!stock) {
+            throw new Error("Stock not found for this ad");
+        }
+        return activity_log_service_1.default.getUserActivityHistory(userId, {
+            page,
+            limit
         });
     }
 }

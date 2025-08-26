@@ -7,6 +7,7 @@ import {
   authMiddleware,
   authorize,
 } from "../../Middleware/authrization/authrization.middleware";
+import { adActivityMiddleware } from "../../Middleware/activity-logging/activity-logging.middleware";
 
 const router: Router = express.Router();
 
@@ -15,6 +16,7 @@ router.post(
   "/create-ad",
   authorize(["admin"]),
   validationMiddleware(CreateAdDto),
+  adActivityMiddleware("created"),
   createAdController
 );
   
@@ -22,7 +24,28 @@ router.patch(
   "/update-ad/:id",
   authorize(["admin", "seller"]),
   validationMiddleware(CreateAdDto, true),
+  adActivityMiddleware("updated"),
   updateAdController
+);
+
+// Get ad details
+router.get(
+  "/:id",
+  authMiddleware,
+  adActivityMiddleware("viewed"),
+  (req: any, res: any) => {
+    res.status(501).json({ success: false, message: "Get ad endpoint not implemented yet" });
+  }
+);
+
+// List ads
+router.get(
+  "/",
+  authMiddleware,
+  adActivityMiddleware("list_viewed"),
+  (req: any, res: any) => {
+    res.status(501).json({ success: false, message: "List ads endpoint not implemented yet" });
+  }
 );
 // router.delete("/delete-ad/:id", authorize(["admin"]), deleteAd);
 

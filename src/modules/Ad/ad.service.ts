@@ -83,7 +83,6 @@ export class AdService {
         stockData,
         {
           userId: req.user._id,
-          action: "created",
           description: `Initial stock created for ad: ${ad.title}`,
           reason: "Ad creation",
           metadata: { adTitle: ad.title },

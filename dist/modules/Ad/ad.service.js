@@ -98,7 +98,6 @@ class AdService {
         };
         const stock = await this.stockService.createStock(ad._id, stockData, {
             userId: req.user._id,
-            action: "created",
             description: `Initial stock created for ad: ${ad.title}`,
             reason: "Ad creation",
             metadata: { adTitle: ad.title },

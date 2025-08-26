@@ -8,4 +8,5 @@ exports.default = (app) => {
     app.use("/api/v1/category", require("./modules/category/category.route").default);
     app.use("/api/v1/ad", require("./modules/Ad/ad.route").default);
     app.use("/api/v1/stock", require("./modules/Stock/stock.route").default);
+    app.use("/api/v1/activity", require("./modules/ActivityLog/activity-log.route").default);
 };
