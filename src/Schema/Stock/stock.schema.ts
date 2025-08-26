@@ -58,7 +58,9 @@ const StockSchema = new Schema<IStock>(
 );
 
 // Pre-save middleware to automatically update status based on availableQuantity
-StockSchema.pre('save', function(next) {
+StockSchema.pre('save', async function(next) {
+  const oldStatus = this.status;
+  
   if (this.availableQuantity === 0) {
     this.status = 'out_of_stock';
   } else if (this.availableQuantity <= 3) {
@@ -66,6 +68,13 @@ StockSchema.pre('save', function(next) {
   } else {
     this.status = 'available';
   }
+  
+  // Update Ad's stockStatus if stock status changed
+  if (oldStatus !== this.status) {
+    const Ad = model('Ad');
+    await Ad.findByIdAndUpdate(this.adId, { stockStatus: this.status });
+  }
+  
   next();
 });
 

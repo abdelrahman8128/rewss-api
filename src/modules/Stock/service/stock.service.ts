@@ -49,11 +49,55 @@ export class StockService {
       throw new Error("You can only view stock for your own ads");
     }
 
-    // Get stock with ad details
-    const stock = await Stock.findOne({ adId }).populate({
-      path: "adId",
-      select: "title description price"
-    });
+    // Get stock with ad details using aggregation
+    const stockResult = await Stock.aggregate([
+      { $match: { adId: new Types.ObjectId(adId) } },
+      {
+        $lookup: {
+          from: "ads",
+          localField: "adId",
+          foreignField: "_id",
+          as: "adDetails"
+        }
+      },
+      { $unwind: "$adDetails" },
+      {
+        $lookup: {
+          from: "adimages",
+          localField: "adDetails.thumbnail",
+          foreignField: "_id",
+          as: "thumbnailImage"
+        }
+      },
+      {
+        $addFields: {
+          "adDetails.thumbnail": {
+            $ifNull: [
+              { $arrayElemAt: ["$thumbnailImage.imageUrl", 0] },
+              null
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          availableQuantity: 1,
+          reservedQuantity: 1,
+          soldQuantity: 1,
+          minimumOrderQuantity: 1,
+          status: 1,
+          adId: {
+            _id: "$adDetails._id",
+            title: "$adDetails.title",
+            description: "$adDetails.description",
+            price: "$adDetails.price",
+            thumbnail: "$adDetails.thumbnail"
+          }
+        }
+      }
+    ]);
+
+    const stock = stockResult[0];
     
     if (!stock) {
       throw new Error("Stock not found for this ad");
@@ -78,15 +122,57 @@ export class StockService {
       throw new Error("You can only update stock for your own ads");
     }
 
+    let stock: IStock;
+
+    // Check if stock exists, if not create one
     if (!ad.stock) {
-      throw new Error("No stock record found for this ad");
+      // Create new stock record with values from request
+      stock = await Stock.create({
+        adId: new Types.ObjectId(adId),
+        availableQuantity: stockData.availableQuantity || 0,
+        reservedQuantity: stockData.reservedQuantity || 0,
+        soldQuantity: stockData.soldQuantity || 0,
+        minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
+      });
+
+      // Update ad with stock reference
+      await Ad.findByIdAndUpdate(adId, { stock: stock._id });
+
+      // Log the creation activity
+      await this.logActivity(
+        stock._id,
+        stock.adId,
+        {
+          userId: req.user._id,
+          action: "created",
+          description: `Stock created for ad: ${ad.title}`,
+          reason: stockData.reason || "Stock creation during update",
+          metadata: { 
+            adTitle: ad.title,
+            userRole: req.user.role,
+            createdDuringUpdate: true
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+        },
+        []
+      );
+
+      // Return the newly created stock
+      await stock.populate({
+        path: "adId",
+        select: "title description price"
+      });
+
+      return stock;
     }
 
-    // Get current stock
-    const stock = await Stock.findById(ad.stock);
-    if (!stock) {
+    // Get existing stock
+    const existingStock = await Stock.findById(ad.stock);
+    if (!existingStock) {
       throw new Error("Stock record not found");
     }
+    stock = existingStock;
 
     const changes: { field: string; oldValue: any; newValue: any }[] = [];
 

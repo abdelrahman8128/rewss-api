@@ -60,6 +60,12 @@ const AdSchema = new mongoose_1.Schema({
         ref: "Stock",
         index: true,
     },
+    stockStatus: {
+        type: String,
+        enum: ["available", "out_of_stock", "low_stock"],
+        default: "available",
+        index: true,
+    },
     status: {
         type: String,
         enum: ["active", "pending", "deleted"],

@@ -7,6 +7,7 @@ exports.StockService = void 0;
 const stock_schema_1 = __importDefault(require("../../../Schema/Stock/stock.schema"));
 const ad_schema_1 = __importDefault(require("../../../Schema/Ad/ad.schema"));
 const activity_log_schema_1 = __importDefault(require("../../../Schema/ActivityLog/activity-log.schema"));
+const mongoose_1 = require("mongoose");
 class StockService {
     async createStock(adId, stockData, logData) {
         const existingStock = await stock_schema_1.default.findOne({ adId });
@@ -33,10 +34,53 @@ class StockService {
         if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
             throw new Error("You can only view stock for your own ads");
         }
-        const stock = await stock_schema_1.default.findOne({ adId }).populate({
-            path: "adId",
-            select: "title description price"
-        });
+        const stockResult = await stock_schema_1.default.aggregate([
+            { $match: { adId: new mongoose_1.Types.ObjectId(adId) } },
+            {
+                $lookup: {
+                    from: "ads",
+                    localField: "adId",
+                    foreignField: "_id",
+                    as: "adDetails"
+                }
+            },
+            { $unwind: "$adDetails" },
+            {
+                $lookup: {
+                    from: "adimages",
+                    localField: "adDetails.thumbnail",
+                    foreignField: "_id",
+                    as: "thumbnailImage"
+                }
+            },
+            {
+                $addFields: {
+                    "adDetails.thumbnail": {
+                        $ifNull: [
+                            { $arrayElemAt: ["$thumbnailImage.imageUrl", 0] },
+                            null
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    availableQuantity: 1,
+                    reservedQuantity: 1,
+                    soldQuantity: 1,
+                    minimumOrderQuantity: 1,
+                    status: 1,
+                    adId: {
+                        _id: "$adDetails._id",
+                        title: "$adDetails.title",
+                        description: "$adDetails.description",
+                        price: "$adDetails.price",
+                        thumbnail: "$adDetails.thumbnail"
+                    }
+                }
+            }
+        ]);
+        const stock = stockResult[0];
         if (!stock) {
             throw new Error("Stock not found for this ad");
         }
@@ -52,13 +96,40 @@ class StockService {
         if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
             throw new Error("You can only update stock for your own ads");
         }
+        let stock;
         if (!ad.stock) {
-            throw new Error("No stock record found for this ad");
+            stock = await stock_schema_1.default.create({
+                adId: new mongoose_1.Types.ObjectId(adId),
+                availableQuantity: stockData.availableQuantity || 0,
+                reservedQuantity: stockData.reservedQuantity || 0,
+                soldQuantity: stockData.soldQuantity || 0,
+                minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
+            });
+            await ad_schema_1.default.findByIdAndUpdate(adId, { stock: stock._id });
+            await this.logActivity(stock._id, stock.adId, {
+                userId: req.user._id,
+                action: "created",
+                description: `Stock created for ad: ${ad.title}`,
+                reason: stockData.reason || "Stock creation during update",
+                metadata: {
+                    adTitle: ad.title,
+                    userRole: req.user.role,
+                    createdDuringUpdate: true
+                },
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+            }, []);
+            await stock.populate({
+                path: "adId",
+                select: "title description price"
+            });
+            return stock;
         }
-        const stock = await stock_schema_1.default.findById(ad.stock);
-        if (!stock) {
+        const existingStock = await stock_schema_1.default.findById(ad.stock);
+        if (!existingStock) {
             throw new Error("Stock record not found");
         }
+        stock = existingStock;
         const changes = [];
         if (stockData.availableQuantity !== undefined && stockData.availableQuantity !== stock.availableQuantity) {
             changes.push({ field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stockData.availableQuantity });

@@ -42,7 +42,8 @@ const StockSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-StockSchema.pre('save', function (next) {
+StockSchema.pre('save', async function (next) {
+    const oldStatus = this.status;
     if (this.availableQuantity === 0) {
         this.status = 'out_of_stock';
     }
@@ -51,6 +52,10 @@ StockSchema.pre('save', function (next) {
     }
     else {
         this.status = 'available';
+    }
+    if (oldStatus !== this.status) {
+        const Ad = (0, mongoose_1.model)('Ad');
+        await Ad.findByIdAndUpdate(this.adId, { stockStatus: this.status });
     }
     next();
 });

@@ -15,6 +15,7 @@ export interface IAd extends Document {
   thumbnail?: Types.ObjectId; // URL for thumbnail image
   album: Types.ObjectId[]; // Array of image URLs
   stock?: Types.ObjectId; // Reference to Stock schema
+  stockStatus: "available" | "out_of_stock" | "low_stock";
   status: "active" | "pending" | "deleted";
   price: number;
   createdAt?: Date; // Optional field for creation timestamp
@@ -84,6 +85,12 @@ const AdSchema = new Schema<IAd>(
     stock: {
       type: Schema.Types.ObjectId,
       ref: "Stock",
+      index: true,
+    },
+    stockStatus: {
+      type: String,
+      enum: ["available", "out_of_stock", "low_stock"],
+      default: "available",
       index: true,
     },
     status: {
