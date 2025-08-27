@@ -1,12 +1,6 @@
 import { Router } from "express";
-import {
-  getUserActivityHistoryController,
-  getUserActivityStatsController,
-  getRecentActivitiesController,
-  getActivitiesByEntityController,
-  logCustomActivityController,
-  cleanupOldLogsController
-} from "./activity-log.controller";
+import { getUserActivityHistoryController } from "./activity-log.controller";
+// Removed stats and recent controllers
 import {
   authMiddleware,
   authorize,
@@ -16,20 +10,15 @@ const router = Router();
 
 // Get user's activity history with filtering and pagination
 router.get("/history", authMiddleware, getUserActivityHistoryController);
+// Admin: get activity history for a specific user
+router.get(
+  "/history/:userId",
+  authorize(["admin"]),
+  getUserActivityHistoryController
+);
 
-// Get user's activity statistics
-router.get("/stats", authMiddleware, getUserActivityStatsController);
+// Removed /stats and /recent endpoints
 
-// Get recent activities for dashboard
-router.get("/recent", authMiddleware, getRecentActivitiesController);
-
-// Get activities by entity type
-router.get("/entity/:entityType", authMiddleware, getActivitiesByEntityController);
-
-// Log a custom activity
-router.post("/log", authMiddleware, logCustomActivityController);
-
-// Clean up old logs (admin only)
-router.delete("/cleanup", authorize(["admin"]), cleanupOldLogsController);
+// Removed entity and cleanup routes
 
 export default router;
