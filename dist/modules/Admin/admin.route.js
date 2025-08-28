@@ -9,4 +9,6 @@ const authrization_middleware_1 = require("../../Middleware/authrization/authriz
 const activity_logging_middleware_1 = require("../../Middleware/activity-logging/activity-logging.middleware");
 const router = express_1.default.Router();
 router.post("/create-seller", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("created"), admin_controller_1.createSellerController);
+router.patch("/ad/:id/status", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), admin_controller_1.changeAdStatusController);
+router.get("/ads", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), admin_controller_1.listAdminAdsController);
 exports.default = router;

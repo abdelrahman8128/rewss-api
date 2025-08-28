@@ -51,7 +51,7 @@ class AdService {
     }
     async list(req) {
         const { search, model, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, } = req.query || {};
-        const filter = {};
+        const filter = { status: "active" };
         if (search) {
             const regex = new RegExp(String(search), "i");
             filter.$or = [{ title: regex }, { slug: regex }, { description: regex }];

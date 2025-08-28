@@ -31,7 +31,7 @@ export class AdService {
       limit = 20,
     } = req.query || {};
 
-    const filter: any = {};
+    const filter: any = { status: "active" };
 
     if (search) {
       const regex = new RegExp(String(search), "i");
