@@ -12,10 +12,5 @@ const activity_logging_middleware_1 = require("../../Middleware/activity-logging
 const router = express_1.default.Router();
 router.post("/create-ad", (0, authrization_middleware_1.authorize)(["admin"]), (0, validation_middleware_1.validationMiddleware)(create_ad_dto_1.CreateAdDto), (0, activity_logging_middleware_1.adActivityMiddleware)("created"), ad_controller_1.createAdController);
 router.patch("/update-ad/:id", (0, authrization_middleware_1.authorize)(["admin", "seller"]), (0, validation_middleware_1.validationMiddleware)(create_ad_dto_1.CreateAdDto, true), (0, activity_logging_middleware_1.adActivityMiddleware)("updated"), ad_controller_1.updateAdController);
-router.get("/:id", authrization_middleware_1.authMiddleware, (0, activity_logging_middleware_1.adActivityMiddleware)("viewed"), (req, res) => {
-    res.status(501).json({ success: false, message: "Get ad endpoint not implemented yet" });
-});
-router.get("/", authrization_middleware_1.authMiddleware, (0, activity_logging_middleware_1.adActivityMiddleware)("list_viewed"), (req, res) => {
-    res.status(501).json({ success: false, message: "List ads endpoint not implemented yet" });
-});
+router.get("/", (0, activity_logging_middleware_1.adActivityMiddleware)("list_viewed"), ad_controller_1.listAdController);
 exports.default = router;

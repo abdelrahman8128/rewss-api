@@ -49,6 +49,11 @@ __decorate([
 ], CreateAdDto.prototype, "model", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsMongoId)(),
+    __metadata("design:type", String)
+], CreateAdDto.prototype, "category", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdDto.prototype, "manufacturedCountry", void 0);

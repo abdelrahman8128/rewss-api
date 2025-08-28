@@ -55,6 +55,11 @@ const AdSchema = new mongoose_1.Schema({
             ref: "AdImage",
         },
     ],
+    category: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Category",
+        index: true,
+    },
     stock: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Stock",
@@ -77,7 +82,7 @@ const AdSchema = new mongoose_1.Schema({
         required: [true, "Ad price is required"],
         min: [0, "Price cannot be negative"],
         index: true,
-    }
+    },
 }, {
     timestamps: true,
 });

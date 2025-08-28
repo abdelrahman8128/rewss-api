@@ -39,6 +39,10 @@ export class CreateAdDto {
   model?: string[];
 
   @IsOptional()
+  @IsMongoId()
+  category?: string;
+
+  @IsOptional()
   @IsString()
   manufacturedCountry?: string;
 

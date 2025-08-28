@@ -49,6 +49,79 @@ class AdService {
     constructor() {
         this.stockService = new stock_service_1.default();
     }
+    async list(req) {
+        const { search, model, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, } = req.query || {};
+        const filter = {};
+        if (search) {
+            const regex = new RegExp(String(search), "i");
+            filter.$or = [{ title: regex }, { slug: regex }, { description: regex }];
+        }
+        if (category) {
+            try {
+                filter.category = new mongoose_1.Types.ObjectId(String(category));
+            }
+            catch (_) { }
+        }
+        if (model) {
+            try {
+                filter["models.model"] = new mongoose_1.Types.ObjectId(String(model));
+            }
+            catch (_) { }
+        }
+        if (seller) {
+            try {
+                filter.userId = new mongoose_1.Types.ObjectId(String(seller));
+            }
+            catch (_) { }
+        }
+        if (stockStatus) {
+            filter.stockStatus = String(stockStatus);
+        }
+        if (condition) {
+            filter.condition = String(condition);
+        }
+        if (minPrice || maxPrice) {
+            filter.price = {};
+            if (minPrice)
+                filter.price.$gte = Number(minPrice);
+            if (maxPrice)
+                filter.price.$lte = Number(maxPrice);
+        }
+        const sort = {};
+        const sortField = String(sortBy) === "price" ? "price" : "createdAt";
+        sort[sortField] = String(sortOrder) === "asc" ? 1 : -1;
+        const pageNumber = Math.max(1, Number(page) || 1);
+        const pageSize = Math.min(100, Math.max(1, Number(limit) || 20));
+        const skip = (pageNumber - 1) * pageSize;
+        const [items, total] = await Promise.all([
+            ad_schema_1.default.find(filter)
+                .select("-album -models._id")
+                .populate([
+                { path: "thumbnail", select: "imageUrl" },
+                {
+                    path: "models.model",
+                    select: "-_id -createdAt -updatedAt -__v",
+                    populate: { path: "brand", select: "name logo -_id" },
+                },
+                {
+                    path: "stock",
+                    select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+                },
+                { path: "category" },
+            ])
+                .sort(sort)
+                .skip(skip)
+                .limit(pageSize),
+            ad_schema_1.default.countDocuments(filter),
+        ]);
+        return {
+            items,
+            page: pageNumber,
+            limit: pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize) || 1,
+        };
+    }
     async create(req) {
         const albumFiles = Array.isArray(req.files)
             ? req.files.filter((f) => f.fieldname === "album")
@@ -72,6 +145,7 @@ class AdService {
             condition: adData.condition,
             models: verifiedModels,
             manufacturedCountry: adData.manufacturedCountry,
+            ...(adData.category ? { category: adData.category } : {}),
         });
         const thumbnailImageData = await this.saveImage(thumbnailFile, ad._id.toString());
         const thumbnailImage = await Ad_image_schema_1.default.create({
@@ -94,7 +168,7 @@ class AdService {
             reservedQuantity: 0,
             soldQuantity: 0,
             minimumOrderQuantity: adData.minimumStockQuantity || 1,
-            status: 'available',
+            status: "available",
         };
         const stock = await this.stockService.createStock(ad._id, stockData, {
             userId: req.user._id,
@@ -102,7 +176,7 @@ class AdService {
             reason: "Ad creation",
             metadata: { adTitle: ad.title },
             ipAddress: req.ip,
-            userAgent: req.get('User-Agent'),
+            userAgent: req.get("User-Agent"),
         });
         ad.stock = stock._id;
         await ad.save();
@@ -192,6 +266,9 @@ class AdService {
         if (adData.model) {
             const verifiedModels = await this.verifyModels(adData.model);
             ad.models = verifiedModels;
+        }
+        if (adData.category) {
+            ad.category = new mongoose_1.Types.ObjectId(adData.category);
         }
         await ad.save();
         await ad.populate([

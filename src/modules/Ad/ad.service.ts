@@ -8,12 +8,106 @@ import { IAd } from "../../Schema/Ad/ad.schema";
 import mongoose, { Types } from "mongoose";
 import StockService from "../Stock/service/stock.service";
 
-
 export class AdService {
   private stockService: StockService;
 
   constructor() {
     this.stockService = new StockService();
+  }
+
+  async list(req: any) {
+    const {
+      search,
+      model,
+      seller,
+      stockStatus,
+      condition,
+      category,
+      minPrice,
+      maxPrice,
+      sortBy = "date",
+      sortOrder = "desc",
+      page = 1,
+      limit = 20,
+    } = req.query || {};
+
+    const filter: any = {};
+
+    if (search) {
+      const regex = new RegExp(String(search), "i");
+      filter.$or = [{ title: regex }, { slug: regex }, { description: regex }];
+    }
+
+    if (category) {
+      try {
+        filter.category = new Types.ObjectId(String(category));
+      } catch (_) {}
+    }
+
+    if (model) {
+      try {
+        filter["models.model"] = new Types.ObjectId(String(model));
+      } catch (_) {}
+    }
+
+    if (seller) {
+      try {
+        filter.userId = new Types.ObjectId(String(seller));
+      } catch (_) {}
+    }
+
+    if (stockStatus) {
+      filter.stockStatus = String(stockStatus);
+    }
+
+    if (condition) {
+      filter.condition = String(condition);
+    }
+
+    if (minPrice || maxPrice) {
+      filter.price = {} as any;
+      if (minPrice) (filter.price as any).$gte = Number(minPrice);
+      if (maxPrice) (filter.price as any).$lte = Number(maxPrice);
+    }
+
+    const sort: any = {};
+    const sortField = String(sortBy) === "price" ? "price" : "createdAt";
+    sort[sortField] = String(sortOrder) === "asc" ? 1 : -1;
+
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number(limit) || 20));
+    const skip = (pageNumber - 1) * pageSize;
+
+    const [items, total] = await Promise.all([
+      Ad.find(filter)
+        .select("-album -models._id")
+        .populate([
+          { path: "thumbnail", select: "imageUrl" },
+          {
+            path: "models.model",
+            select: "-_id -createdAt -updatedAt -__v",
+            populate: { path: "brand", select: "name logo -_id" },
+          },
+          {
+            path: "stock",
+            select:
+              "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+          },
+          { path: "category" },
+        ])
+        .sort(sort)
+        .skip(skip)
+        .limit(pageSize),
+      Ad.countDocuments(filter),
+    ]);
+
+    return {
+      items,
+      page: pageNumber,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
   }
 
   async create(req: any): Promise<IAd> {
@@ -35,7 +129,6 @@ export class AdService {
 
     const verifiedModels = await this.verifyModels(adData.model);
 
-
     const ad = await Ad.create({
       userId: req.user._id,
       title: adData.title,
@@ -44,6 +137,7 @@ export class AdService {
       condition: adData.condition,
       models: verifiedModels,
       manufacturedCountry: adData.manufacturedCountry,
+      ...(adData.category ? { category: adData.category } : {}),
     });
 
     // Save thumbnail image
@@ -70,29 +164,24 @@ export class AdService {
       ad.album.push(new Types.ObjectId(adImage._id.toString()));
     }
 
-      const stockData = {
-        availableQuantity: adData.availableStock || 0,
-        reservedQuantity: 0,
-        soldQuantity: 0,
-        minimumOrderQuantity: adData.minimumStockQuantity || 1,
-        status: 'available' as const,
-      };
+    const stockData = {
+      availableQuantity: adData.availableStock || 0,
+      reservedQuantity: 0,
+      soldQuantity: 0,
+      minimumOrderQuantity: adData.minimumStockQuantity || 1,
+      status: "available" as const,
+    };
 
-      const stock = await this.stockService.createStock(
-        ad._id,
-        stockData,
-        {
-          userId: req.user._id,
-          description: `Initial stock created for ad: ${ad.title}`,
-          reason: "Ad creation",
-          metadata: { adTitle: ad.title },
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent'),
-        }
-      );
+    const stock = await this.stockService.createStock(ad._id, stockData, {
+      userId: req.user._id,
+      description: `Initial stock created for ad: ${ad.title}`,
+      reason: "Ad creation",
+      metadata: { adTitle: ad.title },
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
 
-      ad.stock = stock._id;
-    
+    ad.stock = stock._id;
 
     await ad.save();
     await ad.populate([
@@ -107,7 +196,8 @@ export class AdService {
       },
       {
         path: "stock",
-        select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+        select:
+          "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
       },
     ]);
 
@@ -136,7 +226,6 @@ export class AdService {
     const thumbnailFile = Array.isArray(req.files)
       ? req.files.find((f: any) => f.fieldname === "thumbnail")
       : null;
-
 
     // Delete old thumbnail and album images from s3 and database
     if (thumbnailFile) {
@@ -198,17 +287,15 @@ export class AdService {
     if (adData.manufacturedCountry)
       ad.manufacturedCountry = adData.manufacturedCountry;
 
-    if (adData.model){
-      
+    if (adData.model) {
       const verifiedModels = await this.verifyModels(adData.model);
-      
 
       ad.models = verifiedModels;
-
     }
 
-
-
+    if (adData.category) {
+      ad.category = new Types.ObjectId(adData.category);
+    }
 
     await ad.save();
     await ad.populate([
@@ -223,7 +310,8 @@ export class AdService {
       },
       {
         path: "stock",
-        select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
+        select:
+          "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
       },
     ]);
 
@@ -303,21 +391,21 @@ export class AdService {
     return uploadResult; // Return the saved file name
   }
 
-  private async verifyModels(models: string[]): Promise<{ model: Types.ObjectId }[]> {
+  private async verifyModels(
+    models: string[]
+  ): Promise<{ model: Types.ObjectId }[]> {
     return (
       await Promise.all(
         models.map(async (model: string) => {
           const existsModel = await Model.findById(model);
           if (existsModel) {
-            return { model: new Types.ObjectId(model) }; 
+            return { model: new Types.ObjectId(model) };
           }
           return null;
         })
       )
     ).filter(Boolean) as { model: Types.ObjectId }[];
   }
-
-  
 }
 // Exporting the AdService class to be used in other parts of the application
 export default AdService;

@@ -1,10 +1,11 @@
-import { model, Schema, Document,Types } from "mongoose";
+import { model, Schema, Document, Types } from "mongoose";
 
 export interface IAd extends Document {
   userId: Types.ObjectId;
   _id: Types.ObjectId;
   title: string;
   slug: string;
+  category?: Types.ObjectId;
   models: {
     model: Types.ObjectId; // Reference to the Model schema
     // year: number
@@ -43,7 +44,7 @@ const AdSchema = new Schema<IAd>(
       index: true, // Index for faster search
       lowercase: true, // Convert slug to lowercase
     },
-    
+
     models: [
       {
         model: {
@@ -82,6 +83,11 @@ const AdSchema = new Schema<IAd>(
         ref: "AdImage", // Assuming you have a ProductImage model
       },
     ],
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
+    },
     stock: {
       type: Schema.Types.ObjectId,
       ref: "Stock",
@@ -100,13 +106,12 @@ const AdSchema = new Schema<IAd>(
       index: true, // Index for faster search
     },
 
-    price :{
+    price: {
       type: Number,
       required: [true, "Ad price is required"],
       min: [0, "Price cannot be negative"],
       index: true, // Index for faster search
-    }
-
+    },
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt fields
