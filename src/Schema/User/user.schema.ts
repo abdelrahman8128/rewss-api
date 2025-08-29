@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   username: string;
@@ -14,6 +14,7 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   avatar?: string; // Optional avatar field
+  favorites: Types.ObjectId[]; // Array of ad IDs
 }
 
 const UserSchema = new Schema<IUser>(
@@ -33,10 +34,16 @@ const UserSchema = new Schema<IUser>(
       lowercase: true,
       trim: true,
       index: true,
-
     },
     password: { type: String, required: true },
-    phoneNumber: { type: String, required: false, unique: true, trim: true     ,  index: true,},
+    phoneNumber: {
+      type: String,
+      required: false,
+      unique: true,
+      trim: true,
+      index: true,
+      
+    },
     phoneCode: { type: String, required: false, trim: true },
     isPhoneVerified: { type: Boolean, default: false },
     isEmailVerified: { type: Boolean, default: false },
@@ -51,11 +58,19 @@ const UserSchema = new Schema<IUser>(
       default: "user",
     },
 
-    avatar:{
+    avatar: {
       type: String,
       required: false,
       default: "https://example.com/default-avatar.png", // Default avatar URL
     },
+
+    favorites: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Ad",
+        default: [],
+      },
+    ],
 
     createdAt: { type: Date, default: Date.now, index: true },
   },

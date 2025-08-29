@@ -10,4 +10,5 @@ exports.default = (app) => {
     app.use("/api/v1/stock", require("./modules/Stock/stock.route").default);
     app.use("/api/v1/activity", require("./modules/ActivityLog/activity-log.route").default);
     app.use("/api/v1/admin", require("./modules/Admin/admin.route").default);
+    app.use("/api/v1/user", require("./modules/user/user.route").default);
 };

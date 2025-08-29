@@ -20,7 +20,7 @@ class StockService {
             reservedQuantity: stockData.reservedQuantity || 0,
             soldQuantity: stockData.soldQuantity || 0,
             minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
-            status: stockData.status || 'available',
+            status: stockData.status || "available",
         });
         await activity_log_service_1.default.logActivity(logData.userId, "stock_created", logData.description, { ...logData.metadata, stockId: stock._id, adId }, logData.ipAddress, logData.userAgent);
         return stock;
@@ -31,18 +31,19 @@ class StockService {
         if (!ad) {
             throw new Error("Ad not found");
         }
-        if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
+        if (req.user.role === "seller" &&
+            ad.userId.toString() !== req.user._id.toString()) {
             throw new Error("You can only view stock for your own ads");
         }
         const stockResult = await stock_schema_1.default.aggregate([
-            { $match: { adId: new mongoose_1.Types.ObjectId(adId) } },
+            { $match: { adId: new mongoose_1.Types.ObjectId(String(adId)) } },
             {
                 $lookup: {
                     from: "ads",
                     localField: "adId",
                     foreignField: "_id",
-                    as: "adDetails"
-                }
+                    as: "adDetails",
+                },
             },
             { $unwind: "$adDetails" },
             {
@@ -50,18 +51,15 @@ class StockService {
                     from: "adimages",
                     localField: "adDetails.thumbnail",
                     foreignField: "_id",
-                    as: "thumbnailImage"
-                }
+                    as: "thumbnailImage",
+                },
             },
             {
                 $addFields: {
                     "adDetails.thumbnail": {
-                        $ifNull: [
-                            { $arrayElemAt: ["$thumbnailImage.imageUrl", 0] },
-                            null
-                        ]
-                    }
-                }
+                        $ifNull: [{ $arrayElemAt: ["$thumbnailImage.imageUrl", 0] }, null],
+                    },
+                },
             },
             {
                 $project: {
@@ -75,10 +73,10 @@ class StockService {
                         title: "$adDetails.title",
                         description: "$adDetails.description",
                         price: "$adDetails.price",
-                        thumbnail: "$adDetails.thumbnail"
-                    }
-                }
-            }
+                        thumbnail: "$adDetails.thumbnail",
+                    },
+                },
+            },
         ]);
         const stock = stockResult[0];
         if (!stock) {
@@ -93,13 +91,14 @@ class StockService {
         if (!ad) {
             throw new Error("Ad not found");
         }
-        if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
+        if (req.user.role === "seller" &&
+            ad.userId.toString() !== req.user._id.toString()) {
             throw new Error("You can only update stock for your own ads");
         }
         let stock;
         if (!ad.stock) {
             stock = await stock_schema_1.default.create({
-                adId: new mongoose_1.Types.ObjectId(adId),
+                adId: new mongoose_1.Types.ObjectId(String(adId)),
                 availableQuantity: stockData.availableQuantity || 0,
                 reservedQuantity: stockData.reservedQuantity || 0,
                 soldQuantity: stockData.soldQuantity || 0,
@@ -112,11 +111,11 @@ class StockService {
                 adTitle: ad.title,
                 userRole: req.user.role,
                 createdDuringUpdate: true,
-                reason: stockData.reason || "Stock creation during update"
-            }, req.ip, req.get('User-Agent'));
+                reason: stockData.reason || "Stock creation during update",
+            }, req.ip, req.get("User-Agent"));
             await stock.populate({
                 path: "adId",
-                select: "title description price"
+                select: "title description price",
             });
             return stock;
         }
@@ -126,20 +125,40 @@ class StockService {
         }
         stock = existingStock;
         const changes = [];
-        if (stockData.availableQuantity !== undefined && stockData.availableQuantity !== stock.availableQuantity) {
-            changes.push({ field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stockData.availableQuantity });
+        if (stockData.availableQuantity !== undefined &&
+            stockData.availableQuantity !== stock.availableQuantity) {
+            changes.push({
+                field: "availableQuantity",
+                oldValue: stock.availableQuantity,
+                newValue: stockData.availableQuantity,
+            });
             stock.availableQuantity = stockData.availableQuantity;
         }
-        if (stockData.reservedQuantity !== undefined && stockData.reservedQuantity !== stock.reservedQuantity) {
-            changes.push({ field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stockData.reservedQuantity });
+        if (stockData.reservedQuantity !== undefined &&
+            stockData.reservedQuantity !== stock.reservedQuantity) {
+            changes.push({
+                field: "reservedQuantity",
+                oldValue: stock.reservedQuantity,
+                newValue: stockData.reservedQuantity,
+            });
             stock.reservedQuantity = stockData.reservedQuantity;
         }
-        if (stockData.soldQuantity !== undefined && stockData.soldQuantity !== stock.soldQuantity) {
-            changes.push({ field: "soldQuantity", oldValue: stock.soldQuantity, newValue: stockData.soldQuantity });
+        if (stockData.soldQuantity !== undefined &&
+            stockData.soldQuantity !== stock.soldQuantity) {
+            changes.push({
+                field: "soldQuantity",
+                oldValue: stock.soldQuantity,
+                newValue: stockData.soldQuantity,
+            });
             stock.soldQuantity = stockData.soldQuantity;
         }
-        if (stockData.minimumOrderQuantity !== undefined && stockData.minimumOrderQuantity !== stock.minimumOrderQuantity) {
-            changes.push({ field: "minimumOrderQuantity", oldValue: stock.minimumOrderQuantity, newValue: stockData.minimumOrderQuantity });
+        if (stockData.minimumOrderQuantity !== undefined &&
+            stockData.minimumOrderQuantity !== stock.minimumOrderQuantity) {
+            changes.push({
+                field: "minimumOrderQuantity",
+                oldValue: stock.minimumOrderQuantity,
+                newValue: stockData.minimumOrderQuantity,
+            });
             stock.minimumOrderQuantity = stockData.minimumOrderQuantity;
         }
         await stock.save();
@@ -149,11 +168,11 @@ class StockService {
             adTitle: ad.title,
             changes,
             userRole: req.user.role,
-            reason: stockData.reason || "Stock update"
-        }, req.ip, req.get('User-Agent'));
+            reason: stockData.reason || "Stock update",
+        }, req.ip, req.get("User-Agent"));
         await stock.populate({
             path: "adId",
-            select: "title description price"
+            select: "title description price",
         });
         return stock;
     }
@@ -166,8 +185,16 @@ class StockService {
             throw new Error("Insufficient available quantity");
         }
         const changes = [
-            { field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stock.availableQuantity - quantity },
-            { field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stock.reservedQuantity + quantity }
+            {
+                field: "availableQuantity",
+                oldValue: stock.availableQuantity,
+                newValue: stock.availableQuantity - quantity,
+            },
+            {
+                field: "reservedQuantity",
+                oldValue: stock.reservedQuantity,
+                newValue: stock.reservedQuantity + quantity,
+            },
         ];
         stock.availableQuantity -= quantity;
         stock.reservedQuantity += quantity;
@@ -177,7 +204,7 @@ class StockService {
             adId,
             quantity,
             changes,
-            ...metadata
+            ...metadata,
         }, ipAddress, userAgent);
         return stock;
     }
@@ -190,8 +217,16 @@ class StockService {
             throw new Error("Insufficient reserved quantity");
         }
         const changes = [
-            { field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stock.reservedQuantity - quantity },
-            { field: "soldQuantity", oldValue: stock.soldQuantity, newValue: stock.soldQuantity + quantity }
+            {
+                field: "reservedQuantity",
+                oldValue: stock.reservedQuantity,
+                newValue: stock.reservedQuantity - quantity,
+            },
+            {
+                field: "soldQuantity",
+                oldValue: stock.soldQuantity,
+                newValue: stock.soldQuantity + quantity,
+            },
         ];
         stock.reservedQuantity -= quantity;
         stock.soldQuantity += quantity;
@@ -201,7 +236,7 @@ class StockService {
             adId,
             quantity,
             changes,
-            ...metadata
+            ...metadata,
         }, ipAddress, userAgent);
         return stock;
     }
@@ -212,7 +247,7 @@ class StockService {
         }
         return activity_log_service_1.default.getUserActivityHistory(userId, {
             page,
-            limit
+            limit,
         });
     }
 }

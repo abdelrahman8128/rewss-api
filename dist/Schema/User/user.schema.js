@@ -19,7 +19,13 @@ const UserSchema = new mongoose_1.Schema({
         index: true,
     },
     password: { type: String, required: true },
-    phoneNumber: { type: String, required: false, unique: true, trim: true, index: true, },
+    phoneNumber: {
+        type: String,
+        required: false,
+        unique: true,
+        trim: true,
+        index: true,
+    },
     phoneCode: { type: String, required: false, trim: true },
     isPhoneVerified: { type: Boolean, default: false },
     isEmailVerified: { type: Boolean, default: false },
@@ -38,6 +44,13 @@ const UserSchema = new mongoose_1.Schema({
         required: false,
         default: "https://example.com/default-avatar.png",
     },
+    favorites: [
+        {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: "Ad",
+            default: [],
+        },
+    ],
     createdAt: { type: Date, default: Date.now, index: true },
 }, {
     timestamps: true,

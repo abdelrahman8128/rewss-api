@@ -1,8 +1,9 @@
-import ActivityLog, { IActivityLog } from "../../Schema/ActivityLog/activity-log.schema";
+import ActivityLog, {
+  IActivityLog,
+} from "../../Schema/ActivityLog/activity-log.schema";
 import { Types } from "mongoose";
 
 export class ActivityLogService {
-  
   /**
    * Simple reusable method to log any user activity
    */
@@ -31,7 +32,6 @@ export class ActivityLogService {
     }
   }
 
-
   /**
    * Get user activity history with filtering and pagination
    */
@@ -44,14 +44,13 @@ export class ActivityLogService {
       page?: number;
       limit?: number;
     } = {}
-  ): Promise<{ activities: IActivityLog[]; total: number; page: number; totalPages: number }> {
-    const {
-      action,
-      startDate,
-      endDate,
-      page = 1,
-      limit = 50
-    } = options;
+  ): Promise<{
+    activities: IActivityLog[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const { action, startDate, endDate, page = 1, limit = 50 } = options;
 
     const query: any = { userId };
 
@@ -70,14 +69,14 @@ export class ActivityLogService {
         .skip(skip)
         .limit(limit)
         .lean(),
-      ActivityLog.countDocuments(query)
+      ActivityLog.countDocuments(query),
     ]);
 
     return {
       activities,
       total,
       page,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -98,29 +97,29 @@ export class ActivityLogService {
     const pipeline: any[] = [
       {
         $match: {
-          userId: new Types.ObjectId(userId),
-          createdAt: { $gte: startDate }
-        }
+          userId: new Types.ObjectId(String(userId)),
+          createdAt: { $gte: startDate },
+        },
       },
       {
         $facet: {
           totalActivities: [{ $count: "count" }],
           activitiesByAction: [
-            { $group: { _id: "$action", count: { $sum: 1 } } }
+            { $group: { _id: "$action", count: { $sum: 1 } } },
           ],
           activitiesByDay: [
             {
               $group: {
                 _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
                 },
-                count: { $sum: 1 }
-              }
+                count: { $sum: 1 },
+              },
             },
-            { $sort: { "_id": 1 } }
-          ]
-        }
-      }
+            { $sort: { _id: 1 } },
+          ],
+        },
+      },
     ];
 
     const result = await ActivityLog.aggregate(pipeline);
@@ -128,14 +127,17 @@ export class ActivityLogService {
 
     return {
       totalActivities: stats.totalActivities[0]?.count || 0,
-      activitiesByAction: stats.activitiesByAction.reduce((acc: any, item: any) => {
-        acc[item._id] = item.count;
-        return acc;
-      }, {}),
+      activitiesByAction: stats.activitiesByAction.reduce(
+        (acc: any, item: any) => {
+          acc[item._id] = item.count;
+          return acc;
+        },
+        {}
+      ),
       activitiesByDay: stats.activitiesByDay.map((item: any) => ({
         date: item._id,
-        count: item.count
-      }))
+        count: item.count,
+      })),
     };
   }
 
@@ -155,12 +157,14 @@ export class ActivityLogService {
   /**
    * Delete old activity logs (for cleanup/maintenance)
    */
-  static async cleanupOldLogs(daysToKeep: number = 365): Promise<{ deletedCount: number }> {
+  static async cleanupOldLogs(
+    daysToKeep: number = 365
+  ): Promise<{ deletedCount: number }> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
     const result = await ActivityLog.deleteMany({
-      createdAt: { $lt: cutoffDate }
+      createdAt: { $lt: cutoffDate },
     });
 
     return { deletedCount: result.deletedCount || 0 };

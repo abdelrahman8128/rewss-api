@@ -43,13 +43,13 @@ class ActivityLogService {
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            activity_log_schema_1.default.countDocuments(query)
+            activity_log_schema_1.default.countDocuments(query),
         ]);
         return {
             activities,
             total,
             page,
-            totalPages: Math.ceil(total / limit)
+            totalPages: Math.ceil(total / limit),
         };
     }
     static async getUserActivityStats(userId, days = 30) {
@@ -58,29 +58,29 @@ class ActivityLogService {
         const pipeline = [
             {
                 $match: {
-                    userId: new mongoose_1.Types.ObjectId(userId),
-                    createdAt: { $gte: startDate }
-                }
+                    userId: new mongoose_1.Types.ObjectId(String(userId)),
+                    createdAt: { $gte: startDate },
+                },
             },
             {
                 $facet: {
                     totalActivities: [{ $count: "count" }],
                     activitiesByAction: [
-                        { $group: { _id: "$action", count: { $sum: 1 } } }
+                        { $group: { _id: "$action", count: { $sum: 1 } } },
                     ],
                     activitiesByDay: [
                         {
                             $group: {
                                 _id: {
-                                    $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+                                    $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
                                 },
-                                count: { $sum: 1 }
-                            }
+                                count: { $sum: 1 },
+                            },
                         },
-                        { $sort: { "_id": 1 } }
-                    ]
-                }
-            }
+                        { $sort: { _id: 1 } },
+                    ],
+                },
+            },
         ];
         const result = await activity_log_schema_1.default.aggregate(pipeline);
         const stats = result[0];
@@ -92,8 +92,8 @@ class ActivityLogService {
             }, {}),
             activitiesByDay: stats.activitiesByDay.map((item) => ({
                 date: item._id,
-                count: item.count
-            }))
+                count: item.count,
+            })),
         };
     }
     static async getRecentActivities(userId, limit = 10) {
@@ -106,7 +106,7 @@ class ActivityLogService {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
         const result = await activity_log_schema_1.default.deleteMany({
-            createdAt: { $lt: cutoffDate }
+            createdAt: { $lt: cutoffDate },
         });
         return { deletedCount: result.deletedCount || 0 };
     }

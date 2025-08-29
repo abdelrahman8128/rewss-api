@@ -4,15 +4,18 @@ import ActivityLogService from "../../ActivityLog/activity-log.service";
 import { Types } from "mongoose";
 
 export class StockService {
-  
-  async createStock(adId: Types.ObjectId, stockData: Partial<IStock>, logData: {
-    userId: Types.ObjectId;
-    description: string;
-    reason?: string;
-    metadata?: any;
-    ipAddress?: string;
-    userAgent?: string;
-  }): Promise<IStock> {
+  async createStock(
+    adId: Types.ObjectId,
+    stockData: Partial<IStock>,
+    logData: {
+      userId: Types.ObjectId;
+      description: string;
+      reason?: string;
+      metadata?: any;
+      ipAddress?: string;
+      userAgent?: string;
+    }
+  ): Promise<IStock> {
     // Check if stock already exists for this ad
     const existingStock = await Stock.findOne({ adId });
     if (existingStock) {
@@ -25,7 +28,7 @@ export class StockService {
       reservedQuantity: stockData.reservedQuantity || 0,
       soldQuantity: stockData.soldQuantity || 0,
       minimumOrderQuantity: stockData.minimumOrderQuantity || 1,
-      status: stockData.status || 'available',
+      status: stockData.status || "available",
     });
 
     // Log the creation activity
@@ -43,7 +46,7 @@ export class StockService {
 
   async getStockByAd(req: any): Promise<IStock> {
     const { adId } = req.params;
-    
+
     // Check if ad exists
     const ad = await Ad.findById(adId);
     if (!ad) {
@@ -51,20 +54,23 @@ export class StockService {
     }
 
     // Check authorization for sellers
-    if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
+    if (
+      req.user.role === "seller" &&
+      ad.userId.toString() !== req.user._id.toString()
+    ) {
       throw new Error("You can only view stock for your own ads");
     }
 
     // Get stock with ad details using aggregation
     const stockResult = await Stock.aggregate([
-      { $match: { adId: new Types.ObjectId(adId) } },
+      { $match: { adId: new Types.ObjectId(String(adId)) } },
       {
         $lookup: {
           from: "ads",
           localField: "adId",
           foreignField: "_id",
-          as: "adDetails"
-        }
+          as: "adDetails",
+        },
       },
       { $unwind: "$adDetails" },
       {
@@ -72,18 +78,15 @@ export class StockService {
           from: "adimages",
           localField: "adDetails.thumbnail",
           foreignField: "_id",
-          as: "thumbnailImage"
-        }
+          as: "thumbnailImage",
+        },
       },
       {
         $addFields: {
           "adDetails.thumbnail": {
-            $ifNull: [
-              { $arrayElemAt: ["$thumbnailImage.imageUrl", 0] },
-              null
-            ]
-          }
-        }
+            $ifNull: [{ $arrayElemAt: ["$thumbnailImage.imageUrl", 0] }, null],
+          },
+        },
       },
       {
         $project: {
@@ -97,14 +100,14 @@ export class StockService {
             title: "$adDetails.title",
             description: "$adDetails.description",
             price: "$adDetails.price",
-            thumbnail: "$adDetails.thumbnail"
-          }
-        }
-      }
+            thumbnail: "$adDetails.thumbnail",
+          },
+        },
+      },
     ]);
 
     const stock = stockResult[0];
-    
+
     if (!stock) {
       throw new Error("Stock not found for this ad");
     }
@@ -116,15 +119,16 @@ export class StockService {
     const { adId } = req.params;
     const stockData = req.body;
 
-    
-    
     // Check if ad exists and belongs to seller
     const ad = await Ad.findById(adId);
     if (!ad) {
       throw new Error("Ad not found");
     }
 
-    if (req.user.role === "seller" && ad.userId.toString() !== req.user._id.toString()) {
+    if (
+      req.user.role === "seller" &&
+      ad.userId.toString() !== req.user._id.toString()
+    ) {
       throw new Error("You can only update stock for your own ads");
     }
 
@@ -134,7 +138,7 @@ export class StockService {
     if (!ad.stock) {
       // Create new stock record with values from request
       stock = await Stock.create({
-        adId: new Types.ObjectId(adId),
+        adId: new Types.ObjectId(String(adId)),
         availableQuantity: stockData.availableQuantity || 0,
         reservedQuantity: stockData.reservedQuantity || 0,
         soldQuantity: stockData.soldQuantity || 0,
@@ -149,22 +153,22 @@ export class StockService {
         req.user._id,
         "stock_created",
         `Stock created for ad: ${ad.title}`,
-        { 
+        {
           stockId: stock._id,
           adId: stock.adId,
           adTitle: ad.title,
           userRole: req.user.role,
           createdDuringUpdate: true,
-          reason: stockData.reason || "Stock creation during update"
+          reason: stockData.reason || "Stock creation during update",
         },
         req.ip,
-        req.get('User-Agent')
+        req.get("User-Agent")
       );
 
       // Return the newly created stock
       await stock.populate({
         path: "adId",
-        select: "title description price"
+        select: "title description price",
       });
 
       return stock;
@@ -180,23 +184,51 @@ export class StockService {
     const changes: { field: string; oldValue: any; newValue: any }[] = [];
 
     // Track changes for activity log
-    if (stockData.availableQuantity !== undefined && stockData.availableQuantity !== stock.availableQuantity) {
-      changes.push({ field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stockData.availableQuantity });
+    if (
+      stockData.availableQuantity !== undefined &&
+      stockData.availableQuantity !== stock.availableQuantity
+    ) {
+      changes.push({
+        field: "availableQuantity",
+        oldValue: stock.availableQuantity,
+        newValue: stockData.availableQuantity,
+      });
       stock.availableQuantity = stockData.availableQuantity;
     }
-    
-    if (stockData.reservedQuantity !== undefined && stockData.reservedQuantity !== stock.reservedQuantity) {
-      changes.push({ field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stockData.reservedQuantity });
+
+    if (
+      stockData.reservedQuantity !== undefined &&
+      stockData.reservedQuantity !== stock.reservedQuantity
+    ) {
+      changes.push({
+        field: "reservedQuantity",
+        oldValue: stock.reservedQuantity,
+        newValue: stockData.reservedQuantity,
+      });
       stock.reservedQuantity = stockData.reservedQuantity;
     }
-    
-    if (stockData.soldQuantity !== undefined && stockData.soldQuantity !== stock.soldQuantity) {
-      changes.push({ field: "soldQuantity", oldValue: stock.soldQuantity, newValue: stockData.soldQuantity });
+
+    if (
+      stockData.soldQuantity !== undefined &&
+      stockData.soldQuantity !== stock.soldQuantity
+    ) {
+      changes.push({
+        field: "soldQuantity",
+        oldValue: stock.soldQuantity,
+        newValue: stockData.soldQuantity,
+      });
       stock.soldQuantity = stockData.soldQuantity;
     }
-    
-    if (stockData.minimumOrderQuantity !== undefined && stockData.minimumOrderQuantity !== stock.minimumOrderQuantity) {
-      changes.push({ field: "minimumOrderQuantity", oldValue: stock.minimumOrderQuantity, newValue: stockData.minimumOrderQuantity });
+
+    if (
+      stockData.minimumOrderQuantity !== undefined &&
+      stockData.minimumOrderQuantity !== stock.minimumOrderQuantity
+    ) {
+      changes.push({
+        field: "minimumOrderQuantity",
+        oldValue: stock.minimumOrderQuantity,
+        newValue: stockData.minimumOrderQuantity,
+      });
       stock.minimumOrderQuantity = stockData.minimumOrderQuantity;
     }
 
@@ -207,22 +239,22 @@ export class StockService {
       req.user._id,
       "stock_updated",
       `Stock updated for ad: ${ad.title}`,
-      { 
+      {
         stockId: stock._id,
         adId: stock.adId,
-        adTitle: ad.title, 
+        adTitle: ad.title,
         changes,
         userRole: req.user.role,
-        reason: stockData.reason || "Stock update"
+        reason: stockData.reason || "Stock update",
       },
       req.ip,
-      req.get('User-Agent')
+      req.get("User-Agent")
     );
 
     // Return updated stock with ad details
     await stock.populate({
       path: "adId",
-      select: "title description price"
+      select: "title description price",
     });
 
     return stock;
@@ -246,8 +278,16 @@ export class StockService {
     }
 
     const changes = [
-      { field: "availableQuantity", oldValue: stock.availableQuantity, newValue: stock.availableQuantity - quantity },
-      { field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stock.reservedQuantity + quantity }
+      {
+        field: "availableQuantity",
+        oldValue: stock.availableQuantity,
+        newValue: stock.availableQuantity - quantity,
+      },
+      {
+        field: "reservedQuantity",
+        oldValue: stock.reservedQuantity,
+        newValue: stock.reservedQuantity + quantity,
+      },
     ];
 
     stock.availableQuantity -= quantity;
@@ -259,12 +299,12 @@ export class StockService {
       userId,
       "stock_reserved",
       `Reserved ${quantity} units of stock`,
-      { 
+      {
         stockId: stock._id,
         adId,
         quantity,
         changes,
-        ...metadata
+        ...metadata,
       },
       ipAddress,
       userAgent
@@ -291,8 +331,16 @@ export class StockService {
     }
 
     const changes = [
-      { field: "reservedQuantity", oldValue: stock.reservedQuantity, newValue: stock.reservedQuantity - quantity },
-      { field: "soldQuantity", oldValue: stock.soldQuantity, newValue: stock.soldQuantity + quantity }
+      {
+        field: "reservedQuantity",
+        oldValue: stock.reservedQuantity,
+        newValue: stock.reservedQuantity - quantity,
+      },
+      {
+        field: "soldQuantity",
+        oldValue: stock.soldQuantity,
+        newValue: stock.soldQuantity + quantity,
+      },
     ];
 
     stock.reservedQuantity -= quantity;
@@ -304,12 +352,12 @@ export class StockService {
       userId,
       "stock_purchased",
       `Purchased ${quantity} units of stock`,
-      { 
+      {
         stockId: stock._id,
         adId,
         quantity,
         changes,
-        ...metadata
+        ...metadata,
       },
       ipAddress,
       userAgent
@@ -331,7 +379,7 @@ export class StockService {
 
     return ActivityLogService.getUserActivityHistory(userId, {
       page,
-      limit
+      limit,
     });
   }
 }

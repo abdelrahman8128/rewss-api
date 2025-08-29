@@ -153,7 +153,7 @@ class AdService {
             imageId: thumbnailImageData.key,
             imageUrl: thumbnailImageData.url,
         });
-        ad.thumbnail = new mongoose_1.Types.ObjectId(thumbnailImage._id.toString());
+        ad.thumbnail = new mongoose_1.Types.ObjectId(String(thumbnailImage._id));
         for (const imageFile of albumFiles) {
             const imageData = await this.saveImage(imageFile, ad._id.toString());
             const adImage = await Ad_image_schema_1.default.create({
@@ -161,7 +161,7 @@ class AdService {
                 imageId: imageData.key,
                 imageUrl: imageData.url,
             });
-            ad.album.push(new mongoose_1.Types.ObjectId(adImage._id.toString()));
+            ad.album.push(new mongoose_1.Types.ObjectId(String(adImage._id)));
         }
         const stockData = {
             availableQuantity: adData.availableStock || 0,
@@ -238,7 +238,7 @@ class AdService {
                 imageId: thumbnailImageData.key,
                 imageUrl: thumbnailImageData.url,
             });
-            ad.thumbnail = new mongoose_1.Types.ObjectId(thumbnailImage._id.toString());
+            ad.thumbnail = new mongoose_1.Types.ObjectId(String(thumbnailImage._id));
         }
         if (albumFiles.length) {
             const imagesPromises = albumFiles.map(async (file) => {
@@ -268,7 +268,10 @@ class AdService {
             ad.models = verifiedModels;
         }
         if (adData.category) {
-            ad.category = new mongoose_1.Types.ObjectId(adData.category);
+            ad.category = new mongoose_1.Types.ObjectId(String(adData.category));
+        }
+        if (req.user.role == "seller") {
+            ad.status = "pending";
         }
         await ad.save();
         await ad.populate([
@@ -346,7 +349,7 @@ class AdService {
         return (await Promise.all(models.map(async (model) => {
             const existsModel = await model_schema_1.default.findById(model);
             if (existsModel) {
-                return { model: new mongoose_1.Types.ObjectId(model) };
+                return { model: new mongoose_1.Types.ObjectId(String(model)) };
             }
             return null;
         }))).filter(Boolean);

@@ -13,7 +13,7 @@ const getUserActivityHistoryController = async (req, res) => {
         if (requester?.role === "admin" &&
             req.params?.userId &&
             mongoose_1.Types.ObjectId.isValid(req.params.userId)) {
-            userId = new mongoose_1.Types.ObjectId(req.params.userId);
+            userId = new mongoose_1.Types.ObjectId(String(req.params.userId));
         }
         const { entityType, category, action, severity, startDate, endDate, page = 1, limit = 50, } = req.query;
         const options = {

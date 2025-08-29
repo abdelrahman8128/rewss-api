@@ -14,7 +14,7 @@ export const getUserActivityHistoryController = async (
       req.params?.userId &&
       Types.ObjectId.isValid(req.params.userId)
     ) {
-      userId = new Types.ObjectId(req.params.userId);
+      userId = new Types.ObjectId(String(req.params.userId));
     }
 
     const {

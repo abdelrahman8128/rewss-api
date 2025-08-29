@@ -152,7 +152,7 @@ export class AdService {
       imageUrl: thumbnailImageData.url,
     });
 
-    ad.thumbnail = new Types.ObjectId(thumbnailImage._id.toString());
+    ad.thumbnail = new Types.ObjectId(String(thumbnailImage._id));
 
     for (const imageFile of albumFiles) {
       const imageData = await this.saveImage(imageFile, ad._id.toString());
@@ -161,7 +161,7 @@ export class AdService {
         imageId: imageData.key,
         imageUrl: imageData.url,
       });
-      ad.album.push(new Types.ObjectId(adImage._id.toString()));
+      ad.album.push(new Types.ObjectId(String(adImage._id)));
     }
 
     const stockData = {
@@ -262,7 +262,7 @@ export class AdService {
         imageId: thumbnailImageData.key,
         imageUrl: thumbnailImageData.url,
       });
-      ad.thumbnail = new Types.ObjectId(thumbnailImage._id.toString());
+      ad.thumbnail = new Types.ObjectId(String(thumbnailImage._id));
     }
 
     // Create new album images
@@ -294,7 +294,11 @@ export class AdService {
     }
 
     if (adData.category) {
-      ad.category = new Types.ObjectId(adData.category);
+      ad.category = new Types.ObjectId(String(adData.category));
+    }
+
+    if (req.user.role == "seller") {
+      ad.status = "pending";
     }
 
     await ad.save();
@@ -399,7 +403,7 @@ export class AdService {
         models.map(async (model: string) => {
           const existsModel = await Model.findById(model);
           if (existsModel) {
-            return { model: new Types.ObjectId(model) };
+            return { model: new Types.ObjectId(String(model)) };
           }
           return null;
         })
