@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import User from "../../Schema/User/user.schema"; // Assuming you have a User schema
+import User from "../../Schema/User/user.schema";
+import Ban from "../../Schema/Ban/ban.schema";
 
 export const authMiddleware = async (
   req: Request,
@@ -39,6 +40,43 @@ export const authMiddleware = async (
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
+    }
+
+    // Check if user is banned
+    const activeBan = await Ban.findOne({
+      userId: user._id,
+      isActive: true,
+    });
+
+    if (activeBan) {
+      // Check if ban has expired
+      if (new Date() > activeBan.banEndDate) {
+        // Ban has expired, deactivate it and update user status
+        activeBan.isActive = false;
+        await activeBan.save();
+        await User.findByIdAndUpdate(user._id, { status: "active" });
+      } else {
+        // User is still banned
+        return res.status(403).json({
+          message: "User account is banned",
+          banDetails: {
+            reason: activeBan.reason,
+            banEndDate: activeBan.banEndDate,
+            daysRemaining: Math.ceil(
+              (activeBan.banEndDate.getTime() - new Date().getTime()) /
+                (1000 * 60 * 60 * 24)
+            ),
+          },
+        });
+      }
+    }
+
+    // Check if user status is not active
+    if (user.status !== "active") {
+      return res.status(403).json({
+        message: "User account is not active",
+        status: user.status,
+      });
     }
 
     // Attach the full user data to the request

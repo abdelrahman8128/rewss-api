@@ -31,7 +31,7 @@ const loginController = async (req, res) => {
         if (!isPasswordValid) {
             return res.status(401).json({ message: "invalid data" });
         }
-        const token = jsonwebtoken_1.default.sign({ id: User._id, username: User.username, }, process.env.JWT_SECRET || "secret", {
+        const token = jsonwebtoken_1.default.sign({ id: User._id, username: User.username }, process.env.JWT_SECRET || "secret", {
             expiresIn: process.env.JWT_EXPIRATION || "1h",
         });
         return res.status(200).json({

@@ -1,44 +1,18 @@
 import express, { Router } from "express";
 import {
-  createSellerController,
-  changeAdStatusController,
-  listAdminAdsController,
-} from "./admin.controller";
-import {
   banUserController,
   unbanUserController,
   getBanHistoryController,
   getActiveBansController,
-} from "../ban/ban.controller";
+} from "./ban.controller";
 import { authorize } from "../../Middleware/authrization/authrization.middleware";
 import { userActivityMiddleware } from "../../Middleware/activity-logging/activity-logging.middleware";
 import { validationMiddleware } from "../../Middleware/validation/validation.middleware";
-import { BanUserDto, UnbanUserDto } from "../ban/DTO/ban.dto";
+import { BanUserDto, UnbanUserDto } from "./DTO/ban.dto";
 
 const router: Router = express.Router();
 
-router.post(
-  "/create-seller",
-  authorize(["admin", "super"]),
-  userActivityMiddleware("created"),
-  createSellerController
-);
-
-router.patch(
-  "/ad/:id/status",
-  authorize(["admin", "super"]),
-  userActivityMiddleware("updated"),
-  changeAdStatusController
-);
-
-router.get(
-  "/ads",
-  authorize(["admin", "super"]),
-  userActivityMiddleware("viewed"),
-  listAdminAdsController
-);
-
-// Ban management routes
+// Ban a user (admin only)
 router.post(
   "/ban-user",
   authorize(["admin", "super"]),
@@ -47,6 +21,7 @@ router.post(
   banUserController
 );
 
+// Unban a user (admin only)
 router.post(
   "/unban-user",
   authorize(["admin", "super"]),
@@ -55,6 +30,7 @@ router.post(
   unbanUserController
 );
 
+// Get user's ban history (admin only)
 router.get(
   "/ban-history/:userId",
   authorize(["admin", "super"]),
@@ -62,6 +38,7 @@ router.get(
   getBanHistoryController
 );
 
+// Get all active bans (admin only)
 router.get(
   "/active-bans",
   authorize(["admin", "super"]),

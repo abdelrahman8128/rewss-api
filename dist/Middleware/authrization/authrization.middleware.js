@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authorize = exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_schema_1 = __importDefault(require("../../Schema/User/user.schema"));
+const ban_schema_1 = __importDefault(require("../../Schema/Ban/ban.schema"));
 const authMiddleware = async (req, res, next) => {
     try {
         const token = req.headers.authorization;
@@ -24,6 +25,34 @@ const authMiddleware = async (req, res, next) => {
         const user = await user_schema_1.default.findById(decoded.id);
         if (!user) {
             return res.status(401).json({ message: "User not found" });
+        }
+        const activeBan = await ban_schema_1.default.findOne({
+            userId: user._id,
+            isActive: true,
+        });
+        if (activeBan) {
+            if (new Date() > activeBan.banEndDate) {
+                activeBan.isActive = false;
+                await activeBan.save();
+                await user_schema_1.default.findByIdAndUpdate(user._id, { status: "active" });
+            }
+            else {
+                return res.status(403).json({
+                    message: "User account is banned",
+                    banDetails: {
+                        reason: activeBan.reason,
+                        banEndDate: activeBan.banEndDate,
+                        daysRemaining: Math.ceil((activeBan.banEndDate.getTime() - new Date().getTime()) /
+                            (1000 * 60 * 60 * 24)),
+                    },
+                });
+            }
+        }
+        if (user.status !== "active") {
+            return res.status(403).json({
+                message: "User account is not active",
+                status: user.status,
+            });
         }
         req.user = {
             ...user.toObject(),

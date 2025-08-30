@@ -19,5 +19,6 @@ export default (app: Application) => {
     require("./modules/ActivityLog/activity-log.route").default
   );
   app.use("/api/v1/admin", require("./modules/Admin/admin.route").default);
+  app.use("/api/v1/ban", require("./modules/ban/ban.route").default);
   app.use("/api/v1/user", require("./modules/user/user.route").default);
 };
