@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 import {
   banUserController,
+  blockUserController,
   unbanUserController,
   getBanHistoryController,
   getActiveBansController,
@@ -12,7 +13,15 @@ import { BanUserDto, UnbanUserDto } from "./DTO/ban.dto";
 
 const router: Router = express.Router();
 
-// Ban a user (admin only)
+// Toggle user block status (admin only) - switches between blocked and active
+router.post(
+  "/toggle-user-block/:userId",
+  authorize(["admin", "super"]),
+  userActivityMiddleware("updated"),
+  blockUserController
+);
+
+// Ban a user (admin only) - original ban functionality
 router.post(
   "/ban-user",
   authorize(["admin", "super"]),

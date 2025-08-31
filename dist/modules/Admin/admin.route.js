@@ -5,15 +5,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const admin_controller_1 = require("./admin.controller");
+const user_controller_1 = require("../user/user.controller");
 const ban_controller_1 = require("../ban/ban.controller");
 const authrization_middleware_1 = require("../../Middleware/authrization/authrization.middleware");
 const activity_logging_middleware_1 = require("../../Middleware/activity-logging/activity-logging.middleware");
 const validation_middleware_1 = require("../../Middleware/validation/validation.middleware");
 const ban_dto_1 = require("../ban/DTO/ban.dto");
+const search_users_dto_1 = require("../user/DTO/search.users.dto");
 const router = express_1.default.Router();
 router.post("/create-seller", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("created"), admin_controller_1.createSellerController);
 router.patch("/ad/:id/status", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), admin_controller_1.changeAdStatusController);
 router.get("/ads", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), admin_controller_1.listAdminAdsController);
+router.get("/search-users", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, validation_middleware_1.validationMiddleware)(search_users_dto_1.SearchUsersDto), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), user_controller_1.searchUsersController);
 router.post("/ban-user", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, validation_middleware_1.validationMiddleware)(ban_dto_1.BanUserDto), (0, activity_logging_middleware_1.userActivityMiddleware)("created"), ban_controller_1.banUserController);
 router.post("/unban-user", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, validation_middleware_1.validationMiddleware)(ban_dto_1.UnbanUserDto), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), ban_controller_1.unbanUserController);
 router.get("/ban-history/:userId", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), ban_controller_1.getBanHistoryController);

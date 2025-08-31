@@ -10,6 +10,7 @@ const activity_logging_middleware_1 = require("../../Middleware/activity-logging
 const validation_middleware_1 = require("../../Middleware/validation/validation.middleware");
 const ban_dto_1 = require("./DTO/ban.dto");
 const router = express_1.default.Router();
+router.post("/toggle-user-block/:userId", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), ban_controller_1.blockUserController);
 router.post("/ban-user", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, validation_middleware_1.validationMiddleware)(ban_dto_1.BanUserDto), (0, activity_logging_middleware_1.userActivityMiddleware)("created"), ban_controller_1.banUserController);
 router.post("/unban-user", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, validation_middleware_1.validationMiddleware)(ban_dto_1.UnbanUserDto), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), ban_controller_1.unbanUserController);
 router.get("/ban-history/:userId", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), ban_controller_1.getBanHistoryController);

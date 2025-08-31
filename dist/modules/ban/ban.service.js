@@ -99,5 +99,38 @@ class BanService {
         await user_schema_1.default.updateMany({ _id: { $in: userIds } }, { status: "active" });
         return { cleaned: expiredBans.length };
     }
+    async toggleUserBlock(userId) {
+        const user = await user_schema_1.default.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        if (user.status === "blocked") {
+            const ban = await ban_schema_1.default.findOne({
+                userId: new mongoose_1.Types.ObjectId(userId),
+                isActive: true,
+            });
+            if (ban) {
+                ban.isActive = false;
+                await ban.save();
+            }
+            user.status = "active";
+            await user.save();
+            return { user, action: "unblocked" };
+        }
+        else {
+            user.status = "blocked";
+            await user.save();
+            return { user, action: "blocked" };
+        }
+    }
+    async blockUser(userId) {
+        const user = await user_schema_1.default.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        user.status = "blocked";
+        await user.save();
+        return { user };
+    }
 }
 exports.BanService = BanService;

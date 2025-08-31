@@ -143,4 +143,64 @@ export class UserService {
 
     return updatedUser;
   }
+
+  // Search users with filters (admin only)
+  async searchUsers(query: {
+    search?: string;
+    status?: string;
+    role?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    users: IUser[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  }> {
+    const pageNumber = Math.max(1, Number(query?.page) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number(query?.limit) || 20));
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Build search filter
+    const filter: any = {};
+
+    // Text search across phone, email, and username
+    if (query.search) {
+      const searchRegex = new RegExp(query.search, "i");
+      filter.$or = [
+        { phoneNumber: searchRegex },
+        { email: searchRegex },
+        { username: searchRegex },
+      ];
+    }
+
+    // Status filter
+    if (query.status) {
+      filter.status = query.status;
+    }
+
+    // Role filter
+    if (query.role) {
+      filter.role = query.role;
+    }
+
+    // Execute search with pagination
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize),
+      User.countDocuments(filter),
+    ]);
+
+    return {
+      users,
+      page: pageNumber,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  }
 }

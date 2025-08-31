@@ -4,6 +4,7 @@ import {
   changeAdStatusController,
   listAdminAdsController,
 } from "./admin.controller";
+import { searchUsersController } from "../user/user.controller";
 import {
   banUserController,
   unbanUserController,
@@ -14,6 +15,7 @@ import { authorize } from "../../Middleware/authrization/authrization.middleware
 import { userActivityMiddleware } from "../../Middleware/activity-logging/activity-logging.middleware";
 import { validationMiddleware } from "../../Middleware/validation/validation.middleware";
 import { BanUserDto, UnbanUserDto } from "../ban/DTO/ban.dto";
+import { SearchUsersDto } from "../user/DTO/search.users.dto";
 
 const router: Router = express.Router();
 
@@ -36,6 +38,15 @@ router.get(
   authorize(["admin", "super"]),
   userActivityMiddleware("viewed"),
   listAdminAdsController
+);
+
+// Search users with filters (admin only)
+router.get(
+  "/search-users",
+  authorize(["admin", "super"]),
+  validationMiddleware(SearchUsersDto),
+  userActivityMiddleware("viewed"),
+  searchUsersController
 );
 
 // Ban management routes

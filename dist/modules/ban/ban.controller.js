@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActiveBansController = exports.getBanHistoryController = exports.unbanUserController = exports.banUserController = void 0;
+exports.getActiveBansController = exports.getBanHistoryController = exports.unbanUserController = exports.blockUserController = exports.banUserController = void 0;
 var ban_user_controller_1 = require("./controllers/ban.user.controller");
 Object.defineProperty(exports, "banUserController", { enumerable: true, get: function () { return ban_user_controller_1.banUserController; } });
+var block_user_controller_1 = require("./controllers/block.user.controller");
+Object.defineProperty(exports, "blockUserController", { enumerable: true, get: function () { return block_user_controller_1.blockUserController; } });
 var unban_user_controller_1 = require("./controllers/unban.user.controller");
 Object.defineProperty(exports, "unbanUserController", { enumerable: true, get: function () { return unban_user_controller_1.unbanUserController; } });
 var get_ban_history_controller_1 = require("./controllers/get.ban.history.controller");

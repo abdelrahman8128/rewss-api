@@ -92,5 +92,40 @@ class UserService {
         }
         return updatedUser;
     }
+    async searchUsers(query) {
+        const pageNumber = Math.max(1, Number(query?.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, Number(query?.limit) || 20));
+        const skip = (pageNumber - 1) * pageSize;
+        const filter = {};
+        if (query.search) {
+            const searchRegex = new RegExp(query.search, "i");
+            filter.$or = [
+                { phoneNumber: searchRegex },
+                { email: searchRegex },
+                { username: searchRegex },
+            ];
+        }
+        if (query.status) {
+            filter.status = query.status;
+        }
+        if (query.role) {
+            filter.role = query.role;
+        }
+        const [users, total] = await Promise.all([
+            user_schema_1.default.find(filter)
+                .select("-password")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(pageSize),
+            user_schema_1.default.countDocuments(filter),
+        ]);
+        return {
+            users,
+            page: pageNumber,
+            limit: pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize) || 1,
+        };
+    }
 }
 exports.UserService = UserService;

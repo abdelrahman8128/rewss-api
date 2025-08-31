@@ -164,4 +164,51 @@ export class BanService {
 
     return { cleaned: expiredBans.length };
   }
+
+
+
+  async toggleUserBlock(
+    userId: string
+  ): Promise<{ user: any; action: string }> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Toggle between blocked and active
+    if (user.status === "blocked") {
+         // Find active ban
+    const ban = await Ban.findOne({
+      userId: new Types.ObjectId(userId),
+      isActive: true,
+    });
+
+    if (ban) {
+      ban.isActive = false;
+      await ban.save();
+      }
+
+  
+      user.status = "active";
+      await user.save();
+      return { user, action: "unblocked" };
+    } else {
+      user.status = "blocked";
+      await user.save();
+      return { user, action: "blocked" };
+    }
+  }
+
+  async blockUser(userId: string): Promise<{ user: any }> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    user.status = "blocked";
+    await user.save();
+    
+
+    return { user };
+  }
 }

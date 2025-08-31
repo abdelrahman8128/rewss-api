@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toggleFavoritesController = exports.listFavoritesController = exports.getUserController = void 0;
+exports.searchUsersController = exports.toggleFavoritesController = exports.listFavoritesController = exports.getUserController = void 0;
 var get_user_controller_1 = require("./controllers/get.user.controller");
 Object.defineProperty(exports, "getUserController", { enumerable: true, get: function () { return get_user_controller_1.getUserController; } });
 var list_favorites_controller_1 = require("./controllers/list.favorites.controller");
 Object.defineProperty(exports, "listFavoritesController", { enumerable: true, get: function () { return list_favorites_controller_1.listFavoritesController; } });
 var toggle_favorites_controller_1 = require("./controllers/toggle.favorites.controller");
 Object.defineProperty(exports, "toggleFavoritesController", { enumerable: true, get: function () { return toggle_favorites_controller_1.toggleFavoritesController; } });
+var search_users_controller_1 = require("./controllers/search.users.controller");
+Object.defineProperty(exports, "searchUsersController", { enumerable: true, get: function () { return search_users_controller_1.searchUsersController; } });
