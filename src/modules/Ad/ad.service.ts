@@ -392,7 +392,7 @@ export class AdService {
       fs.unlinkSync(filePath);
     }
 
-    return uploadResult; // Return the saved file name
+    return uploadResult; 
   }
 
   private async verifyModels(
