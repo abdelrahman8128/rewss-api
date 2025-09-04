@@ -42,7 +42,7 @@ const UserSchema = new mongoose_1.Schema({
     avatar: {
         type: String,
         required: false,
-        default: "https://example.com/default-avatar.png",
+        default: null,
     },
     favorites: [
         {

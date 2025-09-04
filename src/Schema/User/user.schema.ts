@@ -61,7 +61,7 @@ const UserSchema = new Schema<IUser>(
     avatar: {
       type: String,
       required: false,
-      default: "https://example.com/default-avatar.png", // Default avatar URL
+      default: null, // Default avatar URL
     },
 
     favorites: [
