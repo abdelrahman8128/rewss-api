@@ -45,7 +45,7 @@ class AdminService {
             phoneNumber: phoneNumber || undefined,
             password: hashedPassword,
             role: "seller",
-            status: "active",
+            status: "pending",
             isEmailVerified: !!email,
             isPhoneVerified: !!phoneNumber,
         });

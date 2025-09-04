@@ -1,4 +1,4 @@
-import { Message } from './../../../../node_modules/@smithy/eventstream-codec/dist-types/Message.d';
+import { Message } from "./../../../../node_modules/@smithy/eventstream-codec/dist-types/Message.d";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -25,15 +25,14 @@ export const registerController = async (req: Request, res: Response) => {
 
     var existingUser;
 
-
-    if (email ) {
+    if (email) {
       existingUser = await users.findOne({ email });
       if (existingUser) {
         return res.status(409).json({ message: "this email already exists" });
       }
     }
 
-    if (phoneNumber ) {
+    if (phoneNumber) {
       existingUser = await users.findOne({ phoneNumber });
       if (existingUser) {
         return res
@@ -64,11 +63,12 @@ export const registerController = async (req: Request, res: Response) => {
     }
 
     const newUser = await users.create({
-      phoneNumber: phoneNumber || '',
+      phoneNumber: phoneNumber || "",
       username,
       email,
       name,
       password: hashedPassword,
+      status: "active",
     });
 
     // Generate JWT token
