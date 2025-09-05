@@ -64,7 +64,7 @@ const requestOtpController = async (req, res, next) => {
             email: email ? email : "",
             otpType: phoneNumber ? "phone" : "email",
             otpCode: hashedOtp,
-            expiresAt: new Date(Date.now() + 0.15 * 60 * 1000),
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000),
             isVerified: false,
             attempts: 0,
             purpose: purpose,

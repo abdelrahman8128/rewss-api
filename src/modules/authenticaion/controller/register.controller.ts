@@ -1,4 +1,4 @@
-import { Message } from "./../../../../node_modules/@smithy/eventstream-codec/dist-types/Message.d";
+import { Message } from "@smithy/eventstream-codec/dist-types/Message";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -62,14 +62,19 @@ export const registerController = async (req: Request, res: Response) => {
       usernameExists = await users.findOne({ username });
     }
 
-    const newUser = await users.create({
-      phoneNumber: phoneNumber || "",
+    const userData: any = {
       username,
       email,
       name,
       password: hashedPassword,
       status: "active",
-    });
+    };
+
+    if (phoneNumber && phoneNumber.trim() !== "") {
+      userData.phoneNumber = phoneNumber;
+    }
+
+    const newUser = await users.create(userData);
 
     // Generate JWT token
     const token = jwt.sign(

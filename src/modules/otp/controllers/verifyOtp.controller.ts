@@ -1,15 +1,14 @@
 import asyncHandler from "express-async-handler";
-import { Request, Response ,NextFunction} from "express";
+import { Request, Response, NextFunction } from "express";
 import Otp from "../../../Schema/otp/otp.schema";
 import User from "../../../Schema/User/user.schema";
 const crypto = require("crypto");
-import ResetPasswordTicket  from "../../../Schema/ResetPasswordTicket/resetPasswordTicket.schema";
-import {authMiddleware} from "../../../Middleware/authrization/authrization.middleware";
+import ResetPasswordTicket from "../../../Schema/ResetPasswordTicket/resetPasswordTicket.schema";
+import { authMiddleware } from "../../../Middleware/authrization/authrization.middleware";
 
 export const verifyOtpController = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-
       const { phoneNumber, email, otpCode } = req.body;
 
       // Validate phone number and OTP code
@@ -26,29 +25,36 @@ export const verifyOtpController = asyncHandler(
         email: email ? email : "",
         isVerified: false,
         expiresAt: { $gt: new Date() },
-
       });
-
-      
 
       if (!otpRecord) {
         res.status(404).json({ message: "OTP not found or expired" });
         return;
       }
       if (otpRecord.purpose === "verifying") {
-       
-              authMiddleware(req, res, next);
+        // Apply authentication middleware
+        await new Promise<void>((resolve, reject) => {
+          authMiddleware(req, res, (err?: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+
+        // If authMiddleware sent a response, return early
+        if (res.headersSent) {
+          return;
+        }
+
         if (!req.user) {
           res.status(401).json({ message: "Unauthorized" });
           return;
         }
 
         // Check if the OTP belongs to the authenticated user
-        if (otpRecord.userId!.toString() !== req.user.id) {
+        if (otpRecord.userId!.toString() !== req.user._id.toString()) {
           res.status(403).json({ message: "Forbidden" });
           return;
         }
-        
       }
 
       // Hash the provided OTP code for comparison
@@ -74,35 +80,32 @@ export const verifyOtpController = asyncHandler(
         return;
       }
 
-      
-
       // Mark the OTP as verified
       otpRecord.isVerified = true;
       await otpRecord.save();
 
       if (otpRecord.purpose === "verifying") {
-
-
-        
         if (otpRecord.otpType === "phone") {
           // Check if phone number is already used by another user
           const existingUserWithPhone = await User.findOne({
             phoneNumber: otpRecord.phoneNumber,
-            _id: { $ne: otpRecord.userId }
+            _id: { $ne: otpRecord.userId },
           });
-          
+
           if (existingUserWithPhone) {
-            res.status(409).json({ message: "Phone number is already in use by another account" });
+            res.status(409).json({
+              message: "Phone number is already in use by another account",
+            });
             return;
           }
-          
+
           // Update user phone verification status
           await User.updateOne(
             { _id: otpRecord.userId },
             {
               $set: {
-          isPhoneVerified: true,
-          phoneNumber: otpRecord.phoneNumber,
+                isPhoneVerified: true,
+                phoneNumber: otpRecord.phoneNumber,
               },
             }
           );
@@ -110,14 +113,16 @@ export const verifyOtpController = asyncHandler(
           // Check if email is already used by another user
           const existingUserWithEmail = await User.findOne({
             email: otpRecord.email,
-            _id: { $ne: otpRecord.userId }
+            _id: { $ne: otpRecord.userId },
           });
-          
+
           if (existingUserWithEmail) {
-            res.status(409).json({ message: "Email is already in use by another account" });
+            res
+              .status(409)
+              .json({ message: "Email is already in use by another account" });
             return;
           }
-          
+
           // Update user email verification status
           await User.updateOne(
             { _id: otpRecord.userId },

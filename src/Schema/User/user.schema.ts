@@ -40,9 +40,9 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: false,
       unique: true,
+      sparse: true,
       trim: true,
       index: true,
-      
     },
     phoneCode: { type: String, required: false, trim: true },
     isPhoneVerified: { type: Boolean, default: false },

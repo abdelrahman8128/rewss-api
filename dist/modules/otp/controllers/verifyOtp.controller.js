@@ -30,12 +30,22 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
             return;
         }
         if (otpRecord.purpose === "verifying") {
-            (0, authrization_middleware_1.authMiddleware)(req, res, next);
+            await new Promise((resolve, reject) => {
+                (0, authrization_middleware_1.authMiddleware)(req, res, (err) => {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve();
+                });
+            });
+            if (res.headersSent) {
+                return;
+            }
             if (!req.user) {
                 res.status(401).json({ message: "Unauthorized" });
                 return;
             }
-            if (otpRecord.userId.toString() !== req.user.id) {
+            if (otpRecord.userId.toString() !== req.user._id.toString()) {
                 res.status(403).json({ message: "Forbidden" });
                 return;
             }
@@ -62,10 +72,12 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
             if (otpRecord.otpType === "phone") {
                 const existingUserWithPhone = await user_schema_1.default.findOne({
                     phoneNumber: otpRecord.phoneNumber,
-                    _id: { $ne: otpRecord.userId }
+                    _id: { $ne: otpRecord.userId },
                 });
                 if (existingUserWithPhone) {
-                    res.status(409).json({ message: "Phone number is already in use by another account" });
+                    res.status(409).json({
+                        message: "Phone number is already in use by another account",
+                    });
                     return;
                 }
                 await user_schema_1.default.updateOne({ _id: otpRecord.userId }, {
@@ -78,10 +90,12 @@ exports.verifyOtpController = (0, express_async_handler_1.default)(async (req, r
             else if (otpRecord.otpType === "email") {
                 const existingUserWithEmail = await user_schema_1.default.findOne({
                     email: otpRecord.email,
-                    _id: { $ne: otpRecord.userId }
+                    _id: { $ne: otpRecord.userId },
                 });
                 if (existingUserWithEmail) {
-                    res.status(409).json({ message: "Email is already in use by another account" });
+                    res
+                        .status(409)
+                        .json({ message: "Email is already in use by another account" });
                     return;
                 }
                 await user_schema_1.default.updateOne({ _id: otpRecord.userId }, { $set: { isEmailVerified: true, email: otpRecord.email } });

@@ -42,14 +42,17 @@ const registerController = async (req, res) => {
             username = `${name.toLowerCase().replace(/\s+/g, "")}${timestamp}`;
             usernameExists = await user_schema_1.default.findOne({ username });
         }
-        const newUser = await user_schema_1.default.create({
-            phoneNumber: phoneNumber || "",
+        const userData = {
             username,
             email,
             name,
             password: hashedPassword,
             status: "active",
-        });
+        };
+        if (phoneNumber && phoneNumber.trim() !== "") {
+            userData.phoneNumber = phoneNumber;
+        }
+        const newUser = await user_schema_1.default.create(userData);
         const token = jsonwebtoken_1.default.sign({ id: newUser._id, username: newUser.username }, process.env.JWT_SECRET || "secret", {
             expiresIn: process.env.JWT_EXPIRATION || "1h",
         });
