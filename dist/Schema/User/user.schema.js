@@ -55,5 +55,7 @@ const UserSchema = new mongoose_1.Schema({
     createdAt: { type: Date, default: Date.now, index: true },
 }, {
     timestamps: true,
+    discriminatorKey: "role",
+    collection: "users",
 });
 exports.default = (0, mongoose_1.model)("User", UserSchema);

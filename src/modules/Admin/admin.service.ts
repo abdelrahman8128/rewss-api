@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../../Schema/User/user.schema";
 import Ad from "../../Schema/Ad/ad.schema";
+import Seller from "../../Schema/User/seller.schema";
 
 export default class AdminService {
   async createSeller(req: any) {
@@ -11,14 +12,14 @@ export default class AdminService {
     }
 
     if (email) {
-      const existsEmail = await User.findOne({ email });
+      const existsEmail = await Seller.findOne({ email });
       if (existsEmail) {
         throw new Error("This email already exists");
       }
     }
 
     if (phoneNumber) {
-      const existsPhone = await User.findOne({ phoneNumber });
+      const existsPhone = await Seller.findOne({ phoneNumber });
       if (existsPhone) {
         throw new Error("This phone number already exists");
       }
@@ -34,16 +35,16 @@ export default class AdminService {
       .toLowerCase()
       .replace(/\s+/g, "");
     let username = `${base}${timestamp}`;
-    let usernameExists = await User.findOne({ username });
+    let usernameExists = await Seller.findOne({ username });
     while (usernameExists) {
       timestamp = `${now.getDate()}${now.getHours()}${now.getMinutes()}${now.getSeconds()}${now.getMilliseconds()}${Math.floor(
         Math.random() * 100
       )}`;
       username = `${base}${timestamp}`;
-      usernameExists = await User.findOne({ username });
+      usernameExists = await Seller.findOne({ username });
     }
 
-    const newSeller = await User.create({
+    const newSeller = await Seller.create({
       username,
       name: name || base,
       email,

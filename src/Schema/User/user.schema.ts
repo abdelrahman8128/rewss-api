@@ -76,6 +76,8 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+    discriminatorKey: "role", // هنا هنستخدم role كمفتاح للتمييز
+    collection: "users",      // كله هيتخزن في نفس الكولكشن
   }
 );
 

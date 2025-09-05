@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const user_schema_1 = __importDefault(require("../../Schema/User/user.schema"));
 const ad_schema_1 = __importDefault(require("../../Schema/Ad/ad.schema"));
+const seller_schema_1 = __importDefault(require("../../Schema/User/seller.schema"));
 class AdminService {
     async createSeller(req) {
         const { email, phoneNumber, password, name } = req.body || {};
@@ -13,13 +13,13 @@ class AdminService {
             throw new Error("Email or phone number is required");
         }
         if (email) {
-            const existsEmail = await user_schema_1.default.findOne({ email });
+            const existsEmail = await seller_schema_1.default.findOne({ email });
             if (existsEmail) {
                 throw new Error("This email already exists");
             }
         }
         if (phoneNumber) {
-            const existsPhone = await user_schema_1.default.findOne({ phoneNumber });
+            const existsPhone = await seller_schema_1.default.findOne({ phoneNumber });
             if (existsPhone) {
                 throw new Error("This phone number already exists");
             }
@@ -32,13 +32,13 @@ class AdminService {
             .toLowerCase()
             .replace(/\s+/g, "");
         let username = `${base}${timestamp}`;
-        let usernameExists = await user_schema_1.default.findOne({ username });
+        let usernameExists = await seller_schema_1.default.findOne({ username });
         while (usernameExists) {
             timestamp = `${now.getDate()}${now.getHours()}${now.getMinutes()}${now.getSeconds()}${now.getMilliseconds()}${Math.floor(Math.random() * 100)}`;
             username = `${base}${timestamp}`;
-            usernameExists = await user_schema_1.default.findOne({ username });
+            usernameExists = await seller_schema_1.default.findOne({ username });
         }
-        const newSeller = await user_schema_1.default.create({
+        const newSeller = await seller_schema_1.default.create({
             username,
             name: name || base,
             email,

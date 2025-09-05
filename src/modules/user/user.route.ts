@@ -13,7 +13,7 @@ const router = Router();
 router.get(
   "/profile",
   authMiddleware,
-  getUserController
+  getUserController 
 );
 
 // Toggle favorites (add if not present, remove if present)
@@ -30,4 +30,4 @@ router.get(
   listFavoritesController
 );
 
-export default router;
+export default router;                                 
