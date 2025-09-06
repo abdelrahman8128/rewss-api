@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const address_controller_1 = require("./address.controller");
+const authrization_middleware_1 = require("../../Middleware/authrization/authrization.middleware");
+const activity_logging_middleware_1 = require("../../Middleware/activity-logging/activity-logging.middleware");
+const validation_middleware_1 = require("../../Middleware/validation/validation.middleware");
+const address_dto_1 = require("./DTO/address.dto");
+const router = express_1.default.Router();
+router.post("/", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, validation_middleware_1.validationMiddleware)(address_dto_1.CreateAddressDto), (0, activity_logging_middleware_1.userActivityMiddleware)("created"), address_controller_1.createAddressController);
+router.get("/", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), address_controller_1.getUserAddressesController);
+router.get("/default", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), address_controller_1.getDefaultAddressController);
+router.get("/:addressId", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), address_controller_1.getAddressByIdController);
+router.put("/:addressId", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, validation_middleware_1.validationMiddleware)(address_dto_1.UpdateAddressDto), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), address_controller_1.updateAddressController);
+router.delete("/:addressId", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("deleted"), address_controller_1.deleteAddressController);
+router.patch("/:addressId/set-default", (0, authrization_middleware_1.authorize)(["user", "seller", "admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), address_controller_1.setDefaultAddressController);
+router.get("/admin/statistics", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), address_controller_1.getAddressStatsController);
+exports.default = router;
