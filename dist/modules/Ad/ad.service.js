@@ -345,6 +345,30 @@ class AdService {
         }
         return uploadResult;
     }
+    async getById(adId) {
+        if (!mongoose_1.Types.ObjectId.isValid(adId)) {
+            throw new Error("Invalid ad ID format");
+        }
+        const ad = await ad_schema_1.default.findById(adId)
+            .select("-stock")
+            .populate([
+            {
+                path: "userId",
+                select: "username name email phoneNumber phoneCode isPhoneVerified isEmailVerified status role avatar",
+            },
+            { path: "thumbnail", select: "_id imageUrl " },
+            { path: "album", select: "_id imageUrl " },
+            {
+                path: "models.model",
+                populate: { path: "brand", select: "name logo country" },
+            },
+            { path: "category", select: "name" },
+        ]);
+        if (!ad) {
+            throw new Error("Ad not found");
+        }
+        return ad;
+    }
     async verifyModels(models) {
         return (await Promise.all(models.map(async (model) => {
             const existsModel = await model_schema_1.default.findById(model);

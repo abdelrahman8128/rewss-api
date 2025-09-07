@@ -392,7 +392,38 @@ export class AdService {
       fs.unlinkSync(filePath);
     }
 
-    return uploadResult; 
+    return uploadResult;
+  }
+
+  async getById(adId: string): Promise<IAd> {
+    if (!Types.ObjectId.isValid(adId)) {
+      throw new Error("Invalid ad ID format");
+    }
+
+    // Populate everything meaningful for editing except stock
+    const ad = await Ad.findById(adId)
+      .select("-stock")
+      .populate([
+        {
+          path: "userId",
+          select:
+            "username name email phoneNumber phoneCode isPhoneVerified isEmailVerified status role avatar",
+        },
+        { path: "thumbnail", select: "_id imageUrl " },
+        { path: "album", select: "_id imageUrl " },
+        {
+          path: "models.model",
+          populate: { path: "brand", select: "name logo country" },
+        },
+        { path: "category", select: "name" },
+        // Do not populate stock here per requirement
+      ]);
+
+    if (!ad) {
+      throw new Error("Ad not found");
+    }
+
+    return ad;
   }
 
   private async verifyModels(
