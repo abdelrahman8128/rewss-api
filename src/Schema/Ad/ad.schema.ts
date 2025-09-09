@@ -87,6 +87,7 @@ const AdSchema = new Schema<IAd>(
       type: Schema.Types.ObjectId,
       ref: "Category",
       index: true,
+      required: [true, "Category is required"],
     },
     stock: {
       type: Schema.Types.ObjectId,

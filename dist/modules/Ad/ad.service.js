@@ -145,7 +145,9 @@ class AdService {
             condition: adData.condition,
             models: verifiedModels,
             manufacturedCountry: adData.manufacturedCountry,
-            ...(adData.category ? { category: adData.category } : {}),
+            ...(adData.category
+                ? { category: new mongoose_1.Types.ObjectId(String(adData.category)) }
+                : {}),
         });
         const thumbnailImageData = await this.saveImage(thumbnailFile, ad._id.toString());
         const thumbnailImage = await Ad_image_schema_1.default.create({
@@ -194,6 +196,7 @@ class AdService {
                 path: "stock",
                 select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
             },
+            { path: "category" },
         ]);
         return ad;
     }
@@ -288,6 +291,7 @@ class AdService {
                 path: "stock",
                 select: "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
             },
+            { path: "category" },
         ]);
         return ad;
     }

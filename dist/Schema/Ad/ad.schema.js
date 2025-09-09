@@ -59,6 +59,7 @@ const AdSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Category",
         index: true,
+        required: [true, "Category is required"],
     },
     stock: {
         type: mongoose_1.Schema.Types.ObjectId,

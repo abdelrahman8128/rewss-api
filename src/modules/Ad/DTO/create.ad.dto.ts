@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsDateString,
   Min,
+  IsDefined,
 } from "class-validator";
 import { Transform } from "class-transformer";
 export class CreateAdDto {
@@ -38,9 +39,10 @@ export class CreateAdDto {
   })
   model?: string[];
 
-  @IsOptional()
+  @IsDefined()
+  @IsNotEmpty()
   @IsMongoId()
-  category?: string;
+  category: string;
 
   @IsOptional()
   @IsString()

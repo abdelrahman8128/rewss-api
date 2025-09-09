@@ -133,8 +133,7 @@ export default class AdminService {
 
     const filter: any = {};
 
-    // Default to pending + deleted if no status provided
-    const defaultStatuses = ["pending", "deleted"];
+    // Only filter by status when provided; otherwise include all statuses
     if (status) {
       const statuses = String(status)
         .split(",")
@@ -145,8 +144,6 @@ export default class AdminService {
       } else if (statuses.length > 1) {
         filter.status = { $in: statuses };
       }
-    } else {
-      filter.status = { $in: defaultStatuses };
     }
 
     if (search) {

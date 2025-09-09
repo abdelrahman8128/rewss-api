@@ -48,7 +48,8 @@ __decorate([
     __metadata("design:type", Array)
 ], CreateAdDto.prototype, "model", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDefined)(),
+    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsMongoId)(),
     __metadata("design:type", String)
 ], CreateAdDto.prototype, "category", void 0);

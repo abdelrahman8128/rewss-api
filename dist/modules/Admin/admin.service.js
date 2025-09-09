@@ -97,7 +97,6 @@ class AdminService {
     async listAds(req) {
         const { search, model, seller, stockStatus, condition, category, minPrice, maxPrice, status, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, } = req.query || {};
         const filter = {};
-        const defaultStatuses = ["pending", "deleted"];
         if (status) {
             const statuses = String(status)
                 .split(",")
@@ -109,9 +108,6 @@ class AdminService {
             else if (statuses.length > 1) {
                 filter.status = { $in: statuses };
             }
-        }
-        else {
-            filter.status = { $in: defaultStatuses };
         }
         if (search) {
             const regex = new RegExp(String(search), "i");

@@ -137,7 +137,9 @@ export class AdService {
       condition: adData.condition,
       models: verifiedModels,
       manufacturedCountry: adData.manufacturedCountry,
-      ...(adData.category ? { category: adData.category } : {}),
+      ...(adData.category
+        ? { category: new Types.ObjectId(String(adData.category)) }
+        : {}),
     });
 
     // Save thumbnail image
@@ -199,6 +201,7 @@ export class AdService {
         select:
           "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
       },
+      { path: "category" },
     ]);
 
     return ad;
@@ -317,6 +320,7 @@ export class AdService {
         select:
           "totalQuantity availableQuantity reservedQuantity soldQuantity status location minimumStockLevel",
       },
+      { path: "category" },
     ]);
 
     return ad;
