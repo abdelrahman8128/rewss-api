@@ -27,6 +27,12 @@ const AdSchema = new mongoose_1.Schema({
                 required: [true, "Model is required"],
                 index: true,
             },
+            year: {
+                type: Number,
+                required: [true, "Year is required"],
+                min: [1900, "Year must be at least 1900"],
+                max: [new Date().getFullYear() + 1, "Year cannot be in the future"],
+            },
         },
     ],
     condition: {

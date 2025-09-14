@@ -31,13 +31,20 @@ export class CreateAdDto {
   @IsNotEmpty()
   condition: string;
 
-  @IsOptional()
-  @IsMongoId({ each: true })
+  @IsDefined()
   @Transform(({ value }) => {
     if (!value) return undefined;
+    // Handle both string and array formats from form data
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [{ model: value, year: new Date().getFullYear() }];
+      }
+    }
     return Array.isArray(value) ? value : [value];
   })
-  model?: string[];
+  models?: Array<{ model: string; year: number }>;
 
   @IsDefined()
   @IsNotEmpty()

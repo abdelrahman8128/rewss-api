@@ -19,6 +19,7 @@ export class AdService {
     const {
       search,
       model,
+      year,
       seller,
       stockStatus,
       condition,
@@ -48,6 +49,13 @@ export class AdService {
       try {
         filter["models.model"] = new Types.ObjectId(String(model));
       } catch (_) {}
+    }
+
+    if (year) {
+      const yearNumber = Number(year);
+      if (!isNaN(yearNumber)) {
+        filter["models.year"] = yearNumber;
+      }
     }
 
     if (seller) {
@@ -127,7 +135,7 @@ export class AdService {
 
     const adData = req.body;
 
-    const verifiedModels = await this.verifyModels(adData.model);
+    const verifiedModels = await this.verifyModels(adData.models);
 
     const ad = await Ad.create({
       userId: req.user._id,
@@ -290,9 +298,8 @@ export class AdService {
     if (adData.manufacturedCountry)
       ad.manufacturedCountry = adData.manufacturedCountry;
 
-    if (adData.model) {
-      const verifiedModels = await this.verifyModels(adData.model);
-
+    if (adData.models) {
+      const verifiedModels = await this.verifyModels(adData.models);
       ad.models = verifiedModels;
     }
 
@@ -431,19 +438,36 @@ export class AdService {
   }
 
   private async verifyModels(
-    models: string[]
-  ): Promise<{ model: Types.ObjectId }[]> {
-    return (
-      await Promise.all(
-        models.map(async (model: string) => {
-          const existsModel = await Model.findById(model);
-          if (existsModel) {
-            return { model: new Types.ObjectId(String(model)) };
-          }
-          return null;
-        })
-      )
-    ).filter(Boolean) as { model: Types.ObjectId }[];
+    models: Array<{ model: string; year: number }>
+  ): Promise<{ model: Types.ObjectId; year: number }[]> {
+    if (!models || models.length === 0) {
+      throw new Error("At least one model is required");
+    }
+
+    const verifiedModels = [];
+
+    for (const modelData of models) {
+      try {
+        const modelId = new Types.ObjectId(modelData.model);
+        const existsModel = await Model.findById(modelId);
+
+        if (!existsModel) {
+          throw new Error(`Model with ID ${modelData.model} not found`);
+        }
+
+        verifiedModels.push({
+          model: modelId,
+          year: modelData.year,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("not found")) {
+          throw error; // Re-throw the "not found" error
+        }
+        throw new Error(`Invalid model ID: ${modelData.model}`);
+      }
+    }
+
+    return verifiedModels;
   }
 }
 // Exporting the AdService class to be used in other parts of the application

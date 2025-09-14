@@ -50,7 +50,7 @@ class AdService {
         this.stockService = new stock_service_1.default();
     }
     async list(req) {
-        const { search, model, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, } = req.query || {};
+        const { search, model, year, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, } = req.query || {};
         const filter = { status: "active" };
         if (search) {
             const regex = new RegExp(String(search), "i");
@@ -67,6 +67,12 @@ class AdService {
                 filter["models.model"] = new mongoose_1.Types.ObjectId(String(model));
             }
             catch (_) { }
+        }
+        if (year) {
+            const yearNumber = Number(year);
+            if (!isNaN(yearNumber)) {
+                filter["models.year"] = yearNumber;
+            }
         }
         if (seller) {
             try {
@@ -136,7 +142,7 @@ class AdService {
             throw new Error("A thumbnail image is required");
         }
         const adData = req.body;
-        const verifiedModels = await this.verifyModels(adData.model);
+        const verifiedModels = await this.verifyModels(adData.models);
         const ad = await ad_schema_1.default.create({
             userId: req.user._id,
             title: adData.title,
@@ -266,8 +272,8 @@ class AdService {
             ad.condition = adData.condition;
         if (adData.manufacturedCountry)
             ad.manufacturedCountry = adData.manufacturedCountry;
-        if (adData.model) {
-            const verifiedModels = await this.verifyModels(adData.model);
+        if (adData.models) {
+            const verifiedModels = await this.verifyModels(adData.models);
             ad.models = verifiedModels;
         }
         if (adData.category) {
@@ -374,13 +380,30 @@ class AdService {
         return ad;
     }
     async verifyModels(models) {
-        return (await Promise.all(models.map(async (model) => {
-            const existsModel = await model_schema_1.default.findById(model);
-            if (existsModel) {
-                return { model: new mongoose_1.Types.ObjectId(String(model)) };
+        if (!models || models.length === 0) {
+            throw new Error("At least one model is required");
+        }
+        const verifiedModels = [];
+        for (const modelData of models) {
+            try {
+                const modelId = new mongoose_1.Types.ObjectId(modelData.model);
+                const existsModel = await model_schema_1.default.findById(modelId);
+                if (!existsModel) {
+                    throw new Error(`Model with ID ${modelData.model} not found`);
+                }
+                verifiedModels.push({
+                    model: modelId,
+                    year: modelData.year,
+                });
             }
-            return null;
-        }))).filter(Boolean);
+            catch (error) {
+                if (error instanceof Error && error.message.includes("not found")) {
+                    throw error;
+                }
+                throw new Error(`Invalid model ID: ${modelData.model}`);
+            }
+        }
+        return verifiedModels;
     }
 }
 exports.AdService = AdService;

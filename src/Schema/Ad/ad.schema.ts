@@ -1,6 +1,6 @@
 import { model, Schema, Document, Types } from "mongoose";
 
-export interface IAd extends Document {
+export type IAd = Document & {
   userId: Types.ObjectId;
   _id: Types.ObjectId;
   title: string;
@@ -8,7 +8,7 @@ export interface IAd extends Document {
   category?: Types.ObjectId;
   models: {
     model: Types.ObjectId; // Reference to the Model schema
-    // year: number
+    year: number; // Year of the model
   }[]; // List of objects containing model and year
   condition: string;
   manufacturedCountry: string;
@@ -21,7 +21,7 @@ export interface IAd extends Document {
   price: number;
   createdAt?: Date; // Optional field for creation timestamp
   updatedAt?: Date; // Optional field for last update timestamp
-}
+};
 
 const AdSchema = new Schema<IAd>(
   {
@@ -50,10 +50,14 @@ const AdSchema = new Schema<IAd>(
         model: {
           type: Schema.Types.ObjectId,
           ref: "Model",
-
           required: [true, "Model is required"],
-
           index: true, // Index for faster search
+        },
+        year: {
+          type: Number,
+          required: [true, "Year is required"],
+          min: [1900, "Year must be at least 1900"],
+          max: [new Date().getFullYear() + 1, "Year cannot be in the future"],
         },
       },
     ],
@@ -75,12 +79,12 @@ const AdSchema = new Schema<IAd>(
     },
     thumbnail: {
       type: Schema.Types.ObjectId,
-      ref: "AdImage", 
+      ref: "AdImage",
     },
     album: [
       {
         type: Schema.Types.ObjectId,
-        ref: "AdImage", 
+        ref: "AdImage",
       },
     ],
     category: {

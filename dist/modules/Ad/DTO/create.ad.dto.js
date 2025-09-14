@@ -38,15 +38,22 @@ __decorate([
     __metadata("design:type", String)
 ], CreateAdDto.prototype, "condition", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsMongoId)({ each: true }),
+    (0, class_validator_1.IsDefined)(),
     (0, class_transformer_1.Transform)(({ value }) => {
         if (!value)
             return undefined;
+        if (typeof value === "string") {
+            try {
+                return JSON.parse(value);
+            }
+            catch {
+                return [{ model: value, year: new Date().getFullYear() }];
+            }
+        }
         return Array.isArray(value) ? value : [value];
     }),
     __metadata("design:type", Array)
-], CreateAdDto.prototype, "model", void 0);
+], CreateAdDto.prototype, "models", void 0);
 __decorate([
     (0, class_validator_1.IsDefined)(),
     (0, class_validator_1.IsNotEmpty)(),
