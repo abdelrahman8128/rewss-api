@@ -14,10 +14,10 @@ const loginController = async (req, res) => {
         if (email) {
             User = await user_schema_1.default.findOne({
                 email: { $regex: new RegExp(`^${email}$`, "i") },
-            });
+            }).select("+password");
         }
         else if (phoneNumber) {
-            User = await user_schema_1.default.findOne({ phoneNumber });
+            User = await user_schema_1.default.findOne({ phoneNumber }).select("+password");
         }
         else {
             return res

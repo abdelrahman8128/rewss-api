@@ -12,9 +12,9 @@ export const loginController = async (req: Request, res: Response) => {
     if (email) {
       User = await users.findOne({
         email: { $regex: new RegExp(`^${email}$`, "i") },
-      });
+      }).select("+password");
     } else if (phoneNumber) {
-      User = await users.findOne({ phoneNumber });
+      User = await users.findOne({ phoneNumber }).select("+password");
     } else {
       return res
         .status(400)

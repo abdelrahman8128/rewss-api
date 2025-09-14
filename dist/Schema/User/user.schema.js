@@ -19,7 +19,7 @@ const UserSchema = new mongoose_1.Schema({
         sparse: true,
         index: true,
     },
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false },
     phoneNumber: {
         type: String,
         required: false,
@@ -69,15 +69,5 @@ const UserSchema = new mongoose_1.Schema({
     timestamps: true,
     discriminatorKey: "role",
     collection: "users",
-});
-UserSchema.pre(/^find/, function () {
-    if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
-        this.select("-password");
-    }
-});
-UserSchema.pre("findOneAndUpdate", function () {
-    if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
-        this.select("-password");
-    }
 });
 exports.default = (0, mongoose_1.model)("User", UserSchema);

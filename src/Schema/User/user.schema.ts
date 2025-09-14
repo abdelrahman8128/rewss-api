@@ -39,7 +39,7 @@ const UserSchema = new Schema<IUser>(
       sparse: true,
       index: true,
     },
-    password: { type: String, required: true },
+    password: { type: String, required: true,select:false },
     phoneNumber: {
       type: String,
       required: false,
@@ -95,20 +95,5 @@ const UserSchema = new Schema<IUser>(
     collection: "users", // كله هيتخزن في نفس الكولكشن
   }
 );
-
-// Middleware to exclude password from all queries by default
-UserSchema.pre(/^find/, function (this: any) {
-  // Only exclude password if it's not explicitly selected
-  if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
-    this.select("-password");
-  }
-});
-
-// Middleware to exclude password from findOneAndUpdate operations
-UserSchema.pre("findOneAndUpdate", function (this: any) {
-  if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
-    this.select("-password");
-  }
-});
 
 export default model<IUser>("User", UserSchema);
