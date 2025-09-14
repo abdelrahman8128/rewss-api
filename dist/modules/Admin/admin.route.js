@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const admin_controller_1 = require("./admin.controller");
+const get_pending_sellers_controller_1 = require("./controllers/get-pending-sellers.controller");
 const user_controller_1 = require("../user/user.controller");
 const ban_controller_1 = require("../ban/ban.controller");
 const authrization_middleware_1 = require("../../Middleware/authrization/authrization.middleware");
@@ -21,4 +22,5 @@ router.post("/ban-user", (0, authrization_middleware_1.authorize)(["admin", "sup
 router.post("/unban-user", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, validation_middleware_1.validationMiddleware)(ban_dto_1.UnbanUserDto), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), ban_controller_1.unbanUserController);
 router.get("/ban-history/:userId", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), ban_controller_1.getBanHistoryController);
 router.get("/active-bans", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), ban_controller_1.getActiveBansController);
+router.get("/pending-sellers", (0, authrization_middleware_1.authorize)(["admin", "super"]), (0, activity_logging_middleware_1.userActivityMiddleware)("viewed"), get_pending_sellers_controller_1.getPendingSellersController);
 exports.default = router;

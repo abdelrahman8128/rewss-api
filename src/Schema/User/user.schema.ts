@@ -13,7 +13,10 @@ export interface IUser extends Document {
   role: "user" | "seller" | "admin" | "super"; // Assuming a role field is needed
   createdAt: Date;
   updatedAt: Date;
-  avatar?: string; // Optional avatar field
+  avatar?: {
+    imageId: string;
+    imageUrl: string;
+  }; // Optional avatar field
   favorites: Types.ObjectId[]; // Array of ad IDs
 }
 
@@ -33,6 +36,7 @@ const UserSchema = new Schema<IUser>(
       unique: true,
       lowercase: true,
       trim: true,
+      sparse: true,
       index: true,
     },
     password: { type: String, required: true },
@@ -56,12 +60,23 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ["user", "seller", "admin", "super"],
       default: "user",
+      index: true,
     },
 
     avatar: {
-      type: String,
+      type: {
+        imageId: {
+          type: String,
+          required: false,
+          trim: true,
+        },
+        imageUrl: {
+          type: String,
+          required: false,
+          trim: true,
+        },
+      },
       required: false,
-      default: null, // Default avatar URL
     },
 
     favorites: [
@@ -77,8 +92,23 @@ const UserSchema = new Schema<IUser>(
   {
     timestamps: true,
     discriminatorKey: "role", // هنا هنستخدم role كمفتاح للتمييز
-    collection: "users",      // كله هيتخزن في نفس الكولكشن
+    collection: "users", // كله هيتخزن في نفس الكولكشن
   }
 );
+
+// Middleware to exclude password from all queries by default
+UserSchema.pre(/^find/, function (this: any) {
+  // Only exclude password if it's not explicitly selected
+  if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
+    this.select("-password");
+  }
+});
+
+// Middleware to exclude password from findOneAndUpdate operations
+UserSchema.pre("findOneAndUpdate", function (this: any) {
+  if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
+    this.select("-password");
+  }
+});
 
 export default model<IUser>("User", UserSchema);

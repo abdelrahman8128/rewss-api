@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const user_schema_1 = __importDefault(require("../../Schema/User/user.schema"));
 const ad_schema_1 = __importDefault(require("../../Schema/Ad/ad.schema"));
 const seller_schema_1 = __importDefault(require("../../Schema/User/seller.schema"));
 class AdminService {
@@ -173,6 +174,38 @@ class AdminService {
         ]);
         return {
             items,
+            page: pageNumber,
+            limit: pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize) || 1,
+        };
+    }
+    async getPendingSellers(query) {
+        const pageNumber = Math.max(1, Number(query?.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, Number(query?.limit) || 20));
+        const skip = (pageNumber - 1) * pageSize;
+        const filter = {
+            role: "seller",
+            status: "pending",
+            requiredDataStatus: "pending",
+        };
+        const sortOrder = query.sortBy === "desc" ? -1 : 1;
+        const sort = { createdAt: sortOrder };
+        const [sellers, total] = await Promise.all([
+            user_schema_1.default.find(filter)
+                .select("-password")
+                .populate([
+                { path: "avatar", select: "imageUrl" },
+                { path: "logo", select: "imageUrl" },
+                { path: "storePhotos", select: "imageUrl" },
+            ])
+                .sort(sort)
+                .skip(skip)
+                .limit(pageSize),
+            user_schema_1.default.countDocuments(filter),
+        ]);
+        return {
+            sellers,
             page: pageNumber,
             limit: pageSize,
             total,

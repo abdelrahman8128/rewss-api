@@ -228,4 +228,55 @@ export default class AdminService {
       totalPages: Math.ceil(total / pageSize) || 1,
     };
   }
+
+  // Get pending sellers for admin review
+  async getPendingSellers(query: {
+    page?: number;
+    limit?: number;
+    sortBy?: "asc" | "desc";
+  }): Promise<{
+    sellers: any[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  }> {
+    const pageNumber = Math.max(1, Number(query?.page) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number(query?.limit) || 20));
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Filter for sellers with pending status and pending required data status
+    const filter = {
+      role: "seller",
+      status: "pending",
+      requiredDataStatus: "pending",
+    };
+
+    // Sort by createdAt
+    const sortOrder = query.sortBy === "desc" ? -1 : 1;
+    const sort = { createdAt: sortOrder as any };
+
+    // Execute query with pagination
+    const [sellers, total] = await Promise.all([
+      User.find(filter)
+        .select("-password")
+        .populate([
+          { path: "avatar", select: "imageUrl" },
+          { path: "logo", select: "imageUrl" },
+          { path: "storePhotos", select: "imageUrl" },
+        ])
+        .sort(sort)
+        .skip(skip)
+        .limit(pageSize),
+      User.countDocuments(filter),
+    ]);
+
+    return {
+      sellers,
+      page: pageNumber,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  }
 }

@@ -4,6 +4,7 @@ import {
   changeAdStatusController,
   listAdminAdsController,
 } from "./admin.controller";
+import { getPendingSellersController } from "./controllers/get-pending-sellers.controller";
 import { searchUsersController } from "../user/user.controller";
 import {
   banUserController,
@@ -78,6 +79,14 @@ router.get(
   authorize(["admin", "super"]),
   userActivityMiddleware("viewed"),
   getActiveBansController
+);
+
+// Get pending sellers for admin review
+router.get(
+  "/pending-sellers",
+  authorize(["admin", "super"]),
+  userActivityMiddleware("viewed"),
+  getPendingSellersController
 );
 
 export default router;

@@ -16,6 +16,7 @@ const UserSchema = new mongoose_1.Schema({
         unique: true,
         lowercase: true,
         trim: true,
+        sparse: true,
         index: true,
     },
     password: { type: String, required: true },
@@ -39,11 +40,22 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         enum: ["user", "seller", "admin", "super"],
         default: "user",
+        index: true,
     },
     avatar: {
-        type: String,
+        type: {
+            imageId: {
+                type: String,
+                required: false,
+                trim: true,
+            },
+            imageUrl: {
+                type: String,
+                required: false,
+                trim: true,
+            },
+        },
         required: false,
-        default: null,
     },
     favorites: [
         {
@@ -57,5 +69,15 @@ const UserSchema = new mongoose_1.Schema({
     timestamps: true,
     discriminatorKey: "role",
     collection: "users",
+});
+UserSchema.pre(/^find/, function () {
+    if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
+        this.select("-password");
+    }
+});
+UserSchema.pre("findOneAndUpdate", function () {
+    if (!this.getQuery().select || !this.getQuery().select.includes("password")) {
+        this.select("-password");
+    }
 });
 exports.default = (0, mongoose_1.model)("User", UserSchema);
