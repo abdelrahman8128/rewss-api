@@ -19,7 +19,7 @@ const router: Router = express.Router();
 //router.get("/list-ads", listAd);
 router.post(
   "/create-ad",
-  authorize(["admin"]),
+  authorize(["admin","seller"]),
   validationMiddleware(CreateAdDto),
   adActivityMiddleware("created"),
   createAdController
