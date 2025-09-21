@@ -1,6 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const path_1 = __importDefault(require("path"));
 exports.default = (app) => {
+    app.get("/socket-test", (req, res) => {
+        res.sendFile(path_1.default.join(__dirname, "../socket-test.html"));
+    });
     app.use("/api/v1/auth", require("./modules/authenticaion/auth.route").default);
     app.use("/api/v1/otp", require("./modules/otp/otp.route").default);
     app.use("/api/v1/brand", require("./modules/brand/brand.route").default);
@@ -13,4 +20,5 @@ exports.default = (app) => {
     app.use("/api/v1/ban", require("./modules/ban/ban.route").default);
     app.use("/api/v1/user", require("./modules/user/user.route").default);
     app.use("/api/v1/address", require("./modules/address/address.route").default);
+    app.use("/api/v1/question", require("./modules/Question/question.route").default);
 };

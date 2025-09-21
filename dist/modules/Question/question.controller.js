@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.editAnswerController = exports.answerQuestionController = exports.deleteQuestionController = exports.editQuestionController = exports.createQuestionController = exports.listQuestionsByAdController = void 0;
+var list_question_controller_1 = require("./controllers/list.question.controller");
+Object.defineProperty(exports, "listQuestionsByAdController", { enumerable: true, get: function () { return list_question_controller_1.listQuestionsByAdController; } });
+var create_question_controller_1 = require("./controllers/create.question.controller");
+Object.defineProperty(exports, "createQuestionController", { enumerable: true, get: function () { return create_question_controller_1.createQuestionController; } });
+var edit_question_controller_1 = require("./controllers/edit.question.controller");
+Object.defineProperty(exports, "editQuestionController", { enumerable: true, get: function () { return edit_question_controller_1.editQuestionController; } });
+var delete_question_controller_1 = require("./controllers/delete.question.controller");
+Object.defineProperty(exports, "deleteQuestionController", { enumerable: true, get: function () { return delete_question_controller_1.deleteQuestionController; } });
+var answer_question_controller_1 = require("./controllers/answer.question.controller");
+Object.defineProperty(exports, "answerQuestionController", { enumerable: true, get: function () { return answer_question_controller_1.answerQuestionController; } });
+var edit_answer_controller_1 = require("./controllers/edit.answer.controller");
+Object.defineProperty(exports, "editAnswerController", { enumerable: true, get: function () { return edit_answer_controller_1.editAnswerController; } });

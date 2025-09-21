@@ -50,8 +50,19 @@ class AdService {
         this.stockService = new stock_service_1.default();
     }
     async list(req) {
-        const { search, model, year, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, } = req.query || {};
-        const filter = { status: "active" };
+        let { search, model, year, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, status, } = req.query || {};
+        const userIdStr = req?.user?._id?.toString?.();
+        const sellerQueryStr = seller ? String(seller) : undefined;
+        const isSelfRequest = Boolean(userIdStr && sellerQueryStr && userIdStr === sellerQueryStr);
+        const filter = {};
+        if (isSelfRequest) {
+            if (status) {
+                filter.status = String(status);
+            }
+        }
+        else {
+            filter.status = "active";
+        }
         if (search) {
             const regex = new RegExp(String(search), "i");
             filter.$or = [{ title: regex }, { slug: regex }, { description: regex }];

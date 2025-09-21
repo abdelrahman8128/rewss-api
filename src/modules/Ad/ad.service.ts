@@ -16,7 +16,7 @@ export class AdService {
   }
 
   async list(req: any) {
-    const {
+    let {
       search,
       model,
       year,
@@ -30,9 +30,23 @@ export class AdService {
       sortOrder = "desc",
       page = 1,
       limit = 20,
+      status,
     } = req.query || {};
 
-    const filter: any = { status: "active" };
+    const userIdStr = req?.user?._id?.toString?.();
+    const sellerQueryStr = seller ? String(seller) : undefined;
+    const isSelfRequest = Boolean(
+      userIdStr && sellerQueryStr && userIdStr === sellerQueryStr
+    );
+
+    const filter: any = {};
+    if (isSelfRequest) {
+      if (status) {
+        filter.status = String(status);
+      }
+    } else {
+      filter.status = "active";
+    }
 
     if (search) {
       const regex = new RegExp(String(search), "i");

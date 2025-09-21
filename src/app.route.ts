@@ -1,6 +1,11 @@
 import { Application } from "express";
+import path from "path";
 
 export default (app: Application) => {
+  // Serve the Socket.IO test page
+  app.get("/socket-test", (req, res) => {
+    res.sendFile(path.join(__dirname, "../socket-test.html"));
+  });
   app.use(
     "/api/v1/auth",
     require("./modules/authenticaion/auth.route").default
@@ -24,5 +29,9 @@ export default (app: Application) => {
   app.use(
     "/api/v1/address",
     require("./modules/address/address.route").default
+  );
+  app.use(
+    "/api/v1/question",
+    require("./modules/Question/question.route").default
   );
 };
