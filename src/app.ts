@@ -24,6 +24,8 @@ export const ioSocket = new Server(server, {
   allowEIO3: true,
   pingTimeout: 60000,
   pingInterval: 25000,
+  maxHttpBufferSize: 10 * 1024 * 1024, // 10MB limit for messages
+  transports: ["websocket", "polling"],
 });
 
 // Initialize socket listeners

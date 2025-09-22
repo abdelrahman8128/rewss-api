@@ -1,6 +1,7 @@
 import { Message, IMessage } from "../../../Schema/chat/message.schema";
 import { Chat } from "../../../Schema/chat/chat.schema";
 import mongoose from "mongoose";
+import { S3Service } from "../../../service/s3.service";
 
 export class MessageService {
   // Create a new message
@@ -14,6 +15,17 @@ export class MessageService {
     metadata?: any;
   }): Promise<IMessage> {
     const messageId = Math.random().toString(36).substr(2, 9);
+
+    if (data.messageType !== "text" && data.metadata?.file) {
+      const file = await this.uploadFile(
+        data.chatId.toString(),
+        data.metadata.file
+      );
+      data.metadata.fileUrl = file.Location || file.url;
+      data.metadata.fileName = data.metadata.file.originalname;
+      data.metadata.fileSize = data.metadata.file.size;
+      data.metadata.mimeType = data.metadata.file.mimetype;
+    }
 
     const message = new Message({
       ...data,
@@ -122,6 +134,35 @@ export class MessageService {
 
     message.status = "read";
     return await message.save();
+  }
+
+  // Mark all unread messages in a chat as read for a user
+  static async markAllAsReadInChat(
+    chatId: mongoose.Types.ObjectId,
+    userId: string
+  ): Promise<IMessage[]> {
+    const unreadMessages = await Message.find({
+      chatId,
+      deleted: false,
+      senderId: { $ne: userId },
+      $or: [
+        { readBy: { $exists: false } },
+        { readBy: { $size: 0 } },
+        { readBy: { $not: { $elemMatch: { userId } } } },
+      ],
+    }).sort({ timestamp: 1 });
+
+    const updated: IMessage[] = [];
+    for (const msg of unreadMessages) {
+      const alreadyRead = msg.readBy.some((r) => r.userId === userId);
+      if (!alreadyRead) {
+        msg.readBy.push({ userId, readAt: new Date() });
+      }
+      msg.status = "read";
+      updated.push(await msg.save());
+    }
+
+    return updated;
   }
 
   // Add reaction to message
@@ -273,5 +314,45 @@ export class MessageService {
       .populate("replyTo")
       .sort({ timestamp: -1 })
       .limit(100);
+  }
+
+  static async uploadFile(chatId: string, file: any): Promise<any> {
+    try {
+      const s3Service = new S3Service();
+
+      // Convert base64 string to buffer if needed
+      let fileBuffer: Buffer;
+      if (typeof file.buffer === "string") {
+        // It's a base64 string, convert to buffer
+        fileBuffer = Buffer.from(file.buffer, "base64");
+      } else {
+        // It's already a buffer
+        fileBuffer = file.buffer;
+      }
+
+      console.log(
+        `Uploading file: ${file.originalname} to S3 for chat: ${chatId}`
+      );
+      console.log(`File size: ${fileBuffer.length} bytes`);
+      console.log(`File type: ${file.mimetype}`);
+
+      const uploadResult = await s3Service.upload({
+        Bucket: process.env.S3_BUCKET,
+        Key: `chat/${chatId}/${file.originalname}`,
+        Body: fileBuffer,
+        ContentType: file.mimetype,
+        ACL: "public-read",
+      });
+
+      console.log(`File uploaded successfully: ${uploadResult.url}`);
+      return uploadResult;
+    } catch (error) {
+      console.error("Error uploading file to S3:", error);
+      throw new Error(
+        `Failed to upload file: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   }
 }

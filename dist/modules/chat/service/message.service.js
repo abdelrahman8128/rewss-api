@@ -3,9 +3,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessageService = void 0;
 const message_schema_1 = require("../../../Schema/chat/message.schema");
 const chat_schema_1 = require("../../../Schema/chat/chat.schema");
+const s3_service_1 = require("../../../service/s3.service");
 class MessageService {
     static async createMessage(data) {
         const messageId = Math.random().toString(36).substr(2, 9);
+        if (data.messageType !== "text" && data.metadata?.file) {
+            const file = await this.uploadFile(data.chatId.toString(), data.metadata.file);
+            data.metadata.fileUrl = file.Location || file.url;
+            data.metadata.fileName = data.metadata.file.originalname;
+            data.metadata.fileSize = data.metadata.file.size;
+            data.metadata.mimeType = data.metadata.file.mimetype;
+        }
         const message = new message_schema_1.Message({
             ...data,
             messageId,
@@ -75,6 +83,28 @@ class MessageService {
         }
         message.status = "read";
         return await message.save();
+    }
+    static async markAllAsReadInChat(chatId, userId) {
+        const unreadMessages = await message_schema_1.Message.find({
+            chatId,
+            deleted: false,
+            senderId: { $ne: userId },
+            $or: [
+                { readBy: { $exists: false } },
+                { readBy: { $size: 0 } },
+                { readBy: { $not: { $elemMatch: { userId } } } },
+            ],
+        }).sort({ timestamp: 1 });
+        const updated = [];
+        for (const msg of unreadMessages) {
+            const alreadyRead = msg.readBy.some((r) => r.userId === userId);
+            if (!alreadyRead) {
+                msg.readBy.push({ userId, readAt: new Date() });
+            }
+            msg.status = "read";
+            updated.push(await msg.save());
+        }
+        return updated;
     }
     static async addReaction(messageId, userId, emoji) {
         const message = await message_schema_1.Message.findOne({ messageId });
@@ -168,6 +198,34 @@ class MessageService {
             .populate("replyTo")
             .sort({ timestamp: -1 })
             .limit(100);
+    }
+    static async uploadFile(chatId, file) {
+        try {
+            const s3Service = new s3_service_1.S3Service();
+            let fileBuffer;
+            if (typeof file.buffer === "string") {
+                fileBuffer = Buffer.from(file.buffer, "base64");
+            }
+            else {
+                fileBuffer = file.buffer;
+            }
+            console.log(`Uploading file: ${file.originalname} to S3 for chat: ${chatId}`);
+            console.log(`File size: ${fileBuffer.length} bytes`);
+            console.log(`File type: ${file.mimetype}`);
+            const uploadResult = await s3Service.upload({
+                Bucket: process.env.S3_BUCKET,
+                Key: `chat/${chatId}/${file.originalname}`,
+                Body: fileBuffer,
+                ContentType: file.mimetype,
+                ACL: "public-read",
+            });
+            console.log(`File uploaded successfully: ${uploadResult.url}`);
+            return uploadResult;
+        }
+        catch (error) {
+            console.error("Error uploading file to S3:", error);
+            throw new Error(`Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
 }
 exports.MessageService = MessageService;

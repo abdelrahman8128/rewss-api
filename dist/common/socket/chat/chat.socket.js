@@ -11,70 +11,135 @@ function getPrivateRoomId(userA, userB) {
     return [userA, userB].sort().join("_");
 }
 const chatSocket = (io) => {
+    const roomParticipants = new Map();
+    const userIdToSockets = new Map();
     io.on("connection", (socket) => {
         console.log(`User connected to chat: ${socket.id}`);
         console.log(`Authenticated user:`, socket.data.user);
         let currentRoomId = null;
+        const currentUserId = socket.data.user?.id;
+        if (currentUserId) {
+            if (!userIdToSockets.has(currentUserId)) {
+                userIdToSockets.set(currentUserId, new Set());
+            }
+            userIdToSockets.get(currentUserId).add(socket.id);
+        }
         socket.on("joinRoom", async (data) => {
             const senderId = socket.data.user?.id;
             const receiverId = data.receiverId;
-            if (!senderId) {
-                socket.emit("error", { message: "User ID not found in token" });
-                return;
-            }
-            if (!receiverId) {
-                socket.emit("error", { message: "Receiver ID is required" });
+            if (!senderId || !receiverId) {
+                socket.emit("error", { message: "Missing senderId or receiverId" });
                 return;
             }
             const roomId = getPrivateRoomId(senderId, receiverId);
             currentRoomId = roomId;
             socket.join(roomId);
+            if (!roomParticipants.has(roomId)) {
+                roomParticipants.set(roomId, new Set());
+            }
+            roomParticipants.get(roomId)?.add(senderId);
             let chat = await chat_schema_1.Chat.findOne({ roomId });
             if (!chat) {
-                chat = new chat_schema_1.Chat({
-                    participants: [senderId, receiverId],
-                    roomId: roomId,
-                });
+                chat = new chat_schema_1.Chat({ participants: [senderId, receiverId], roomId });
                 await chat.save();
             }
-            console.log(`User ${senderId} joined private room: ${roomId} with ${receiverId}`);
+            try {
+                const result = await message_service_1.MessageService.getMessagesByChatId(chat._id, 1, 50);
+                socket.emit("messagesResponse", {
+                    messages: result.messages,
+                    total: result.total,
+                    hasMore: result.hasMore,
+                    chatId: chat._id,
+                });
+            }
+            catch (error) {
+                socket.emit("error", { message: "Failed to load chat history" });
+            }
+            try {
+                const newlyRead = await message_service_1.MessageService.markAllAsReadInChat(chat._id, senderId);
+                if (newlyRead.length > 0) {
+                    for (const msg of newlyRead) {
+                        const senderSockets = userIdToSockets.get(msg.senderId);
+                        if (senderSockets && senderSockets.size > 0) {
+                            for (const sid of senderSockets) {
+                                io.to(sid).emit("messageRead", {
+                                    messageId: msg.messageId,
+                                    readBy: senderId,
+                                    readAt: new Date().toISOString(),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (error) {
+                console.error("Error marking messages as read:", error);
+            }
             socket.to(roomId).emit("userJoined", {
                 userId: senderId,
-                roomId: roomId,
+                roomId,
                 timestamp: new Date().toISOString(),
             });
         });
         socket.on("sendMessage", async (data) => {
-            const senderId = socket.data.user?.id;
-            const receiverId = data.receiverId;
-            if (!senderId) {
-                socket.emit("error", { message: "User ID not found in token" });
-                return;
+            try {
+                const senderId = socket.data.user?.id;
+                const receiverId = data.receiverId;
+                if (!senderId || !receiverId) {
+                    socket.emit("error", { message: "Invalid sender/receiver" });
+                    return;
+                }
+                const roomId = getPrivateRoomId(senderId, receiverId);
+                const chat = await chat_schema_1.Chat.findOne({ roomId });
+                if (!chat) {
+                    socket.emit("error", { message: "Chat not found" });
+                    return;
+                }
+                const message = await message_service_1.MessageService.createMessage({
+                    chatId: chat._id,
+                    senderId,
+                    message: data.message,
+                    messageType: data.messageType || "text",
+                    metadata: data.metadata || {},
+                });
+                io.to(roomId).emit("message", {
+                    senderId: message.senderId,
+                    message: message.message,
+                    roomId,
+                    timestamp: message.timestamp.toISOString(),
+                    messageId: message.messageId,
+                    messageType: message.messageType,
+                    status: message.status,
+                    metadata: message.metadata,
+                    readBy: message.readBy,
+                });
+                const participants = roomParticipants.get(roomId);
+                if (participants) {
+                    for (const userId of participants) {
+                        if (userId !== senderId) {
+                            const readMessage = await message_service_1.MessageService.markAsRead(message.messageId, userId);
+                            socket.emit("messageRead", {
+                                messageId: readMessage?.messageId,
+                                readBy: userId,
+                                readAt: new Date().toISOString(),
+                            });
+                        }
+                    }
+                }
+                else {
+                    const deliveredMessage = await message_service_1.MessageService.markAsDelivered(message.messageId, receiverId);
+                    socket.emit("messageDelivered", {
+                        messageId: deliveredMessage?.messageId,
+                        deliveredTo: receiverId,
+                    });
+                }
             }
-            const roomId = getPrivateRoomId(senderId, receiverId);
-            const chat = await chat_schema_1.Chat.findOne({ roomId });
-            if (!chat) {
-                socket.emit("error", { message: "Chat not found" });
-                return;
+            catch (error) {
+                socket.emit("messageError", {
+                    message: `Failed to send message: ${error instanceof Error ? error.message : "Unknown error"}`,
+                    originalMessage: data.message,
+                });
             }
-            const message = await message_service_1.MessageService.createMessage({
-                chatId: chat._id,
-                senderId: senderId,
-                message: data.message,
-                messageType: data.messageType || "text",
-                metadata: data.metadata,
-            });
-            console.log(`Message from ${senderId} to ${receiverId} in room ${roomId}:`, data.message, `Type: ${data.messageType || "text"}`);
-            socket.to(roomId).emit("message", {
-                senderId: message.senderId,
-                message: message.message,
-                roomId: roomId,
-                timestamp: message.timestamp.toISOString(),
-                messageId: message.messageId,
-                messageType: message.messageType,
-                status: message.status,
-                metadata: message.metadata,
-            });
         });
         socket.on("typing", (data) => {
             const senderId = socket.data.user?.id;
@@ -196,8 +261,54 @@ const chatSocket = (io) => {
                 socket.emit("error", { message: "Failed to fetch messages" });
             }
         });
+        socket.on("leaveRoom", () => {
+            if (currentRoomId && socket.data.user?.id) {
+                const participants = roomParticipants.get(currentRoomId);
+                if (participants) {
+                    participants.delete(socket.data.user.id);
+                    console.log(`User ${socket.data.user.id} left room ${currentRoomId}`);
+                    if (participants.size === 0) {
+                        roomParticipants.delete(currentRoomId);
+                        console.log(`Cleaned up empty room ${currentRoomId}`);
+                    }
+                }
+                currentRoomId = null;
+            }
+        });
+        socket.on("getRoomParticipants", () => {
+            if (currentRoomId) {
+                const participants = roomParticipants.get(currentRoomId);
+                socket.emit("roomParticipants", {
+                    roomId: currentRoomId,
+                    participants: participants ? Array.from(participants) : [],
+                });
+            }
+        });
+        socket.on("ping", (data) => {
+            socket.emit("pong", { timestamp: data.timestamp });
+        });
         socket.on("disconnect", (reason) => {
             console.log(`User disconnected from chat: ${socket.id}, reason: ${reason}`);
+            if (currentRoomId && socket.data.user?.id) {
+                const participants = roomParticipants.get(currentRoomId);
+                if (participants) {
+                    participants.delete(socket.data.user.id);
+                    console.log(`Removed user ${socket.data.user.id} from room ${currentRoomId} participants`);
+                    if (participants.size === 0) {
+                        roomParticipants.delete(currentRoomId);
+                        console.log(`Cleaned up empty room ${currentRoomId}`);
+                    }
+                }
+            }
+            if (currentUserId) {
+                const set = userIdToSockets.get(currentUserId);
+                if (set) {
+                    set.delete(socket.id);
+                    if (set.size === 0) {
+                        userIdToSockets.delete(currentUserId);
+                    }
+                }
+            }
         });
     });
 };

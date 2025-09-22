@@ -25,6 +25,8 @@ exports.ioSocket = new socket_io_1.Server(server, {
     allowEIO3: true,
     pingTimeout: 60000,
     pingInterval: 25000,
+    maxHttpBufferSize: 10 * 1024 * 1024,
+    transports: ["websocket", "polling"],
 });
 (0, socket_io_2.socketFunction)();
 app.use((0, cors_1.default)({
