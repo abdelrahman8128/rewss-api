@@ -9,9 +9,9 @@ function getPrivateRoomId(userA: string, userB: string) {
 }
 
 export const chatSocket = (io: Namespace) => {
-  // Track room participants
+  // Track room participants  Map<roomId, Set<userId>>
   const roomParticipants = new Map<string, Set<string>>();
-  // Track user -> connected socket ids
+  // Track user -> connected socket ids Map<userId, Set<socketId>>
   const userIdToSockets = new Map<string, Set<string>>();
 
   io.on("connection", (socket: Socket) => {
