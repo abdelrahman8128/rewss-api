@@ -15,7 +15,7 @@ const socket_io_2 = require("./common/socket/socket.io");
 const morgan_1 = __importDefault(require("morgan"));
 const app_route_1 = __importDefault(require("./app.route"));
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 const server = http_1.default.createServer(app);
 exports.ioSocket = new socket_io_1.Server(server, {
     cors: {

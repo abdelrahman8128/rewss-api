@@ -11,7 +11,7 @@ import morgan from "morgan";
 
 import appModule from "./app.route";
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 const server = http.createServer(app);
 

@@ -9,6 +9,7 @@ class MessageService {
         const messageId = Math.random().toString(36).substr(2, 9);
         if (data.messageType !== "text" && data.metadata?.file) {
             const file = await this.uploadFile(data.chatId.toString(), data.metadata.file);
+            console.log("upload file", file);
             data.metadata.fileUrl = file.Location || file.url;
             data.metadata.fileName = data.metadata.file.originalname;
             data.metadata.fileSize = data.metadata.file.size;

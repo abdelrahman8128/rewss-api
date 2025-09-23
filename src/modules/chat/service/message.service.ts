@@ -21,6 +21,7 @@ export class MessageService {
         data.chatId.toString(),
         data.metadata.file
       );
+      console.log("upload file", file);
       data.metadata.fileUrl = file.Location || file.url;
       data.metadata.fileName = data.metadata.file.originalname;
       data.metadata.fileSize = data.metadata.file.size;

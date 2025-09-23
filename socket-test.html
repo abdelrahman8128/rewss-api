@@ -239,7 +239,10 @@
       >
         <strong>📋 Instructions:</strong>
         <ol style="margin: 10px 0; padding-left: 20px">
-          <li>Enter your server URL (default: http://localhost:8000)</li>
+          <li>
+            Enter your server URL (default:
+            http://ec2-40-172-146-217.me-central-1.compute.amazonaws.com)
+          </li>
           <li>Provide a valid JWT authentication token</li>
           <li>Enter the User ID you want to chat with</li>
           <li>Click "Connect" to establish authenticated socket connection</li>
@@ -275,8 +278,8 @@
           <input
             type="text"
             id="serverUrl"
-            value="http://localhost:8000"
-            placeholder="http://localhost:8000"
+            value="http://ec2-40-172-146-217.me-central-1.compute.amazonaws.com"
+            placeholder="http://ec2-40-172-146-217.me-central-1.compute.amazonaws.com"
           />
           <button onclick="updateServerUrl()">Update URL</button>
         </div>
@@ -542,7 +545,8 @@
     </div>
     <script>
       let socket = null;
-      let serverUrl = "http://localhost:8000";
+      let serverUrl =
+        "http://ec2-40-172-146-217.me-central-1.compute.amazonaws.com";
       let autoReconnect = true;
       let currentUserId = null;
       let chatPartnerId = null;
