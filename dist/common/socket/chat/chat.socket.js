@@ -95,12 +95,17 @@ const chatSocket = (namespace) => {
                     socket.emit("error", { message: "Chat not found" });
                     return;
                 }
+                const messageType = data.messageType || "text";
+                const metadata = { ...(data.metadata || {}) };
+                if (messageType !== "text" && data.file) {
+                    metadata.file = data.file;
+                }
                 const message = await message_service_1.MessageService.createMessage({
                     chatId: chat._id,
                     senderId,
                     message: data.message,
-                    messageType: data.messageType || "text",
-                    metadata: data.metadata || {},
+                    messageType,
+                    metadata,
                 });
                 namespace.to(roomId).emit("message", {
                     senderId: message.senderId,

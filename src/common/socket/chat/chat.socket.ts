@@ -130,20 +130,28 @@ export const chatSocket = (namespace: Namespace) => {
             return;
           }
 
+          // Normalize metadata/file for MessageService
+          const messageType =
+            (data.messageType as
+              | "text"
+              | "image"
+              | "file"
+              | "audio"
+              | "video"
+              | "sticker") || "text";
+          const metadata: any = { ...(data.metadata || {}) };
+          // MessageService expects file under metadata.file
+          if (messageType !== "text" && data.file) {
+            metadata.file = data.file;
+          }
+
           // Save message
           const message = await MessageService.createMessage({
             chatId: chat._id as mongoose.Types.ObjectId,
             senderId,
             message: data.message,
-            messageType:
-              (data.messageType as
-                | "text"
-                | "image"
-                | "file"
-                | "audio"
-                | "video"
-                | "sticker") || "text",
-            metadata: data.metadata || {},
+            messageType,
+            metadata,
           });
 
           // Broadcast message
