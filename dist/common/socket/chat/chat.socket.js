@@ -10,10 +10,10 @@ const mongoose_1 = __importDefault(require("mongoose"));
 function getPrivateRoomId(userA, userB) {
     return [userA, userB].sort().join("_");
 }
-const chatSocket = (io) => {
+const chatSocket = (namespace) => {
     const roomParticipants = new Map();
     const userIdToSockets = new Map();
-    io.on("connection", (socket) => {
+    namespace.on("connection", (socket) => {
         console.log(`User connected to chat: ${socket.id}`);
         console.log(`Authenticated user:`, socket.data.user);
         let currentRoomId = null;
@@ -62,7 +62,7 @@ const chatSocket = (io) => {
                         const senderSockets = userIdToSockets.get(msg.senderId);
                         if (senderSockets && senderSockets.size > 0) {
                             for (const sid of senderSockets) {
-                                io.to(sid).emit("messageRead", {
+                                namespace.to(sid).emit("messageRead", {
                                     messageId: msg.messageId,
                                     readBy: senderId,
                                     readAt: new Date().toISOString(),
@@ -102,7 +102,7 @@ const chatSocket = (io) => {
                     messageType: data.messageType || "text",
                     metadata: data.metadata || {},
                 });
-                io.to(roomId).emit("message", {
+                namespace.to(roomId).emit("message", {
                     senderId: message.senderId,
                     message: message.message,
                     roomId,

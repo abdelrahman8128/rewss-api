@@ -8,13 +8,13 @@ function getPrivateRoomId(userA: string, userB: string) {
   return [userA, userB].sort().join("_");
 }
 
-export const chatSocket = (io: Namespace) => {
+export const chatSocket = (namespace: Namespace) => {
   // Track room participants  Map<roomId, Set<userId>>
   const roomParticipants = new Map<string, Set<string>>();
   // Track user -> connected socket ids Map<userId, Set<socketId>>
   const userIdToSockets = new Map<string, Set<string>>();
 
-  io.on("connection", (socket: Socket) => {
+  namespace.on("connection", (socket: Socket) => {
     console.log(`User connected to chat: ${socket.id}`);
     console.log(`Authenticated user:`, socket.data.user);
 
@@ -85,7 +85,7 @@ export const chatSocket = (io: Namespace) => {
             const senderSockets = userIdToSockets.get(msg.senderId);
             if (senderSockets && senderSockets.size > 0) {
               for (const sid of senderSockets) {
-                io.to(sid).emit("messageRead", {
+                namespace.to(sid).emit("messageRead", {
                   messageId: msg.messageId,
                   readBy: senderId,
                   readAt: new Date().toISOString(),
@@ -147,7 +147,7 @@ export const chatSocket = (io: Namespace) => {
           });
 
           // Broadcast message
-          io.to(roomId).emit("message", {
+          namespace.to(roomId).emit("message", {
             senderId: message.senderId,
             message: message.message,
             roomId,
