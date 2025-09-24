@@ -50,8 +50,9 @@ Private 1:1 rooms are identified by a stable room id derived from the two user i
 
 - **sendMessage**
 
-  - Payload: `{ receiverId: string, message: string, messageType?: "text"|"image"|"file"|"audio"|"video"|"sticker", metadata?: object }`
+  - Payload: `{ receiverId: string, message: string, messageType?: "text"|"image"|"file"|"audio"|"video"|"sticker", metadata?: object, file?: { buffer: string|Buffer, originalname: string, mimetype: string, size: number } }`
   - Persists the message then emits `message` to the room. If the other participant is currently in the room, the message is immediately marked as read and `messageRead` is emitted to the sender; otherwise it is marked as delivered and `messageDelivered` is emitted to the sender.
+  - Notes for file messages: If `messageType` is not `text` and `file` is provided, the server will upload it to S3 and store resulting `fileUrl`, `fileName`, `fileSize`, and `mimeType` under `metadata`.
 
 - **typing**
 

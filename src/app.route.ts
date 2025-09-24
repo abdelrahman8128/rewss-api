@@ -34,4 +34,5 @@ export default (app: Application) => {
     "/api/v1/question",
     require("./modules/Question/question.route").default
   );
+  app.use("/api/v1/chat", require("./modules/chat/chat.route").default);
 };

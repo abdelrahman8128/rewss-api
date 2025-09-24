@@ -154,6 +154,9 @@ export const chatSocket = (namespace: Namespace) => {
             metadata,
           });
 
+
+          
+
           // Broadcast message
           namespace.to(roomId).emit("message", {
             senderId: message.senderId,
