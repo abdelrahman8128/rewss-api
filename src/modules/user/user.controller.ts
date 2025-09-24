@@ -5,3 +5,4 @@ export { toggleFavoritesController } from "./controllers/toggle.favorites.contro
 export { searchUsersController } from "./controllers/search.users.controller";
 export { updateUserController } from "./controllers/update.user.controller";
 export { setSellerPhysicalAddressController } from "./controllers/set.seller.physical.address.controller";
+export { getPublicSellerController } from "./controllers/get.public.seller.controller";

@@ -6,6 +6,7 @@ import {
   listFavoritesController,
   updateUserController,
   setSellerPhysicalAddressController,
+  getPublicSellerController,
 } from "./user.controller";
 import { authMiddleware } from "../../Middleware/authrization/authrization.middleware";
 import { userActivityMiddleware } from "../../Middleware/activity-logging/activity-logging.middleware";
@@ -24,7 +25,10 @@ router.get("/favorites", authMiddleware, listFavoritesController);
 // Toggle favorites (add if not present, remove if present)
 router.put("/favorites/:adId", authMiddleware, toggleFavoritesController);
 
-// Get user data by ID (for viewing other user profiles) - must be last
+// Public seller profile (no auth)
+router.get("/public/seller/:sellerId", getPublicSellerController);
+
+// Get user data by ID (for viewing other user profiles)
 router.get("/:userId", authMiddleware, getUserByIdController);
 
 // Update user (user or seller)
@@ -45,4 +49,4 @@ router.post(
   setSellerPhysicalAddressController
 );
 
-export default router
+export default router;

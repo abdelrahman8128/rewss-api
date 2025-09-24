@@ -11,6 +11,7 @@ const router = (0, express_1.Router)();
 router.get("/profile", authrization_middleware_1.authMiddleware, user_controller_1.getUserController);
 router.get("/favorites", authrization_middleware_1.authMiddleware, user_controller_1.listFavoritesController);
 router.put("/favorites/:adId", authrization_middleware_1.authMiddleware, user_controller_1.toggleFavoritesController);
+router.get("/public/seller/:sellerId", user_controller_1.getPublicSellerController);
 router.get("/:userId", authrization_middleware_1.authMiddleware, user_controller_1.getUserByIdController);
 router.patch("/profile", authrization_middleware_1.authMiddleware, (0, validation_middleware_1.validationMiddleware)(update_users_dto_1.UpdateUsersDto, true), (0, activity_logging_middleware_1.userActivityMiddleware)("updated"), user_controller_1.updateUserController);
 router.post("/seller/physical-address", authrization_middleware_1.authMiddleware, (0, validation_middleware_1.validationMiddleware)(seller_physical_address_dto_1.CreateSellerPhysicalAddressDto), (0, activity_logging_middleware_1.userActivityMiddleware)("created"), user_controller_1.setSellerPhysicalAddressController);

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setSellerPhysicalAddressController = exports.updateUserController = exports.searchUsersController = exports.toggleFavoritesController = exports.listFavoritesController = exports.getUserByIdController = exports.getUserController = void 0;
+exports.getPublicSellerController = exports.setSellerPhysicalAddressController = exports.updateUserController = exports.searchUsersController = exports.toggleFavoritesController = exports.listFavoritesController = exports.getUserByIdController = exports.getUserController = void 0;
 var get_user_controller_1 = require("./controllers/get.user.controller");
 Object.defineProperty(exports, "getUserController", { enumerable: true, get: function () { return get_user_controller_1.getUserController; } });
 var get_user_by_id_controller_1 = require("./controllers/get.user.by.id.controller");
@@ -15,3 +15,5 @@ var update_user_controller_1 = require("./controllers/update.user.controller");
 Object.defineProperty(exports, "updateUserController", { enumerable: true, get: function () { return update_user_controller_1.updateUserController; } });
 var set_seller_physical_address_controller_1 = require("./controllers/set.seller.physical.address.controller");
 Object.defineProperty(exports, "setSellerPhysicalAddressController", { enumerable: true, get: function () { return set_seller_physical_address_controller_1.setSellerPhysicalAddressController; } });
+var get_public_seller_controller_1 = require("./controllers/get.public.seller.controller");
+Object.defineProperty(exports, "getPublicSellerController", { enumerable: true, get: function () { return get_public_seller_controller_1.getPublicSellerController; } });
