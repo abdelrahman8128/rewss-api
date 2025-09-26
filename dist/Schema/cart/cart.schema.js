@@ -5,6 +5,7 @@ const mongoose_1 = require("mongoose");
 const mongoose_2 = require("mongoose");
 const CartSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    sellerId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
     items: [
         {
             productId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Ad", required: true },
@@ -16,6 +17,7 @@ const CartSchema = new mongoose_1.Schema({
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
 });
+CartSchema.index({ userId: 1, sellerId: 1 }, { unique: true });
 CartSchema.virtual("totalCost").get(function () {
     if (!this.items || this.items.length === 0)
         return 0;

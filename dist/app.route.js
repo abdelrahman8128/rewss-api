@@ -22,4 +22,5 @@ exports.default = (app) => {
     app.use("/api/v1/address", require("./modules/address/address.route").default);
     app.use("/api/v1/question", require("./modules/Question/question.route").default);
     app.use("/api/v1/chat", require("./modules/chat/chat.route").default);
+    app.use("/api/v1/cart", require("./modules/Cart/cart.route").default);
 };

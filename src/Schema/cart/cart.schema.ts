@@ -4,6 +4,7 @@ import { model } from "mongoose";
 
 export interface ICart extends Document {
   userId: Schema.Types.ObjectId;
+  sellerId: Schema.Types.ObjectId;
   items: ICartItem[];
   totalCost?: number; // Virtual field for calculated total
 }
@@ -16,6 +17,7 @@ export interface ICartItem extends Document {
 const CartSchema = new Schema<ICart>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     items: [
       {
         productId: { type: Schema.Types.ObjectId, ref: "Ad", required: true },
@@ -29,6 +31,9 @@ const CartSchema = new Schema<ICart>(
     toObject: { virtuals: true }, // Include virtual fields in objects
   }
 );
+
+// Ensure a user can only have one cart per seller
+CartSchema.index({ userId: 1, sellerId: 1 }, { unique: true });
 
 // Virtual field for total cost
 CartSchema.virtual("totalCost").get(function () {
