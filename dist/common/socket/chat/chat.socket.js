@@ -196,7 +196,7 @@ const chatSocket = (namespace) => {
             const message = await message_service_1.MessageService.addReaction(data.messageId, senderId, data.emoji);
             if (message) {
                 if (currentRoomId) {
-                    socket.to(currentRoomId).emit("messageReaction", {
+                    namespace.to(currentRoomId).emit("messageReaction", {
                         messageId: data.messageId,
                         reaction: {
                             userId: senderId,
@@ -214,7 +214,7 @@ const chatSocket = (namespace) => {
             const message = await message_service_1.MessageService.removeReaction(data.messageId, senderId);
             if (message) {
                 if (currentRoomId) {
-                    socket.to(currentRoomId).emit("reactionRemoved", {
+                    namespace.to(currentRoomId).emit("reactionRemoved", {
                         messageId: data.messageId,
                         userId: senderId,
                     });
@@ -228,7 +228,7 @@ const chatSocket = (namespace) => {
             const message = await message_service_1.MessageService.editMessage(data.messageId, data.newMessage, senderId);
             if (message) {
                 if (currentRoomId) {
-                    socket.to(currentRoomId).emit("messageEdited", {
+                    namespace.to(currentRoomId).emit("messageEdited", {
                         messageId: data.messageId,
                         newMessage: data.newMessage,
                         editedAt: message.editedAt?.toISOString(),
@@ -243,7 +243,7 @@ const chatSocket = (namespace) => {
             const message = await message_service_1.MessageService.deleteMessage(data.messageId, senderId);
             if (message) {
                 if (currentRoomId) {
-                    socket.to(currentRoomId).emit("messageDeleted", {
+                    namespace.to(currentRoomId).emit("messageDeleted", {
                         messageId: data.messageId,
                         deletedBy: senderId,
                     });

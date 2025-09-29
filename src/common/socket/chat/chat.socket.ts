@@ -154,9 +154,6 @@ export const chatSocket = (namespace: Namespace) => {
             metadata,
           });
 
-
-          
-
           // Broadcast message
           namespace.to(roomId).emit("message", {
             senderId: message.senderId,
@@ -279,7 +276,7 @@ export const chatSocket = (namespace: Namespace) => {
         );
         if (message) {
           if (currentRoomId) {
-            socket.to(currentRoomId).emit("messageReaction", {
+            namespace.to(currentRoomId).emit("messageReaction", {
               messageId: data.messageId,
               reaction: {
                 userId: senderId,
@@ -303,7 +300,7 @@ export const chatSocket = (namespace: Namespace) => {
       );
       if (message) {
         if (currentRoomId) {
-          socket.to(currentRoomId).emit("reactionRemoved", {
+          namespace.to(currentRoomId).emit("reactionRemoved", {
             messageId: data.messageId,
             userId: senderId,
           });
@@ -325,7 +322,7 @@ export const chatSocket = (namespace: Namespace) => {
         );
         if (message) {
           if (currentRoomId) {
-            socket.to(currentRoomId).emit("messageEdited", {
+            namespace.to(currentRoomId).emit("messageEdited", {
               messageId: data.messageId,
               newMessage: data.newMessage,
               editedAt: message.editedAt?.toISOString(),
@@ -346,7 +343,7 @@ export const chatSocket = (namespace: Namespace) => {
       );
       if (message) {
         if (currentRoomId) {
-          socket.to(currentRoomId).emit("messageDeleted", {
+          namespace.to(currentRoomId).emit("messageDeleted", {
             messageId: data.messageId,
             deletedBy: senderId,
           });

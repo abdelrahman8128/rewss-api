@@ -4,6 +4,26 @@ import mongoose from "mongoose";
 import { S3Service } from "../../../service/s3.service";
 
 export class MessageService {
+  // Ensure chat.lastMessage reflects the latest non-deleted message
+  private static async refreshChatLastMessage(
+    chatId: mongoose.Types.ObjectId
+  ): Promise<void> {
+    const latest = await Message.find({ chatId, deleted: false })
+      .sort({ timestamp: -1 })
+      .limit(1);
+
+    if (latest.length > 0) {
+      await Chat.findByIdAndUpdate(chatId, {
+        lastMessage: latest[0].message,
+        lastMessageAt: latest[0].timestamp,
+      });
+    } else {
+      await Chat.findByIdAndUpdate(chatId, {
+        lastMessage: null,
+        lastMessageAt: null,
+      });
+    }
+  }
   // Create a new message
   static async createMessage(data: {
     chatId: mongoose.Types.ObjectId;
@@ -45,11 +65,8 @@ export class MessageService {
 
     const savedMessage = await message.save();
 
-    // Update chat last message
-    await Chat.findByIdAndUpdate(data.chatId, {
-      lastMessage: data.message,
-      lastMessageAt: new Date(),
-    });
+    // Update chat last message from latest non-deleted message
+    await this.refreshChatLastMessage(data.chatId);
 
     return savedMessage;
   }
@@ -218,14 +235,17 @@ export class MessageService {
     message.isEdited = true;
     message.editedAt = new Date();
 
-    // Update chat last message if this is the latest message
-    const chat = await Chat.findById(message.chatId);
-    if (chat && chat.lastMessage === message.message) {
-      chat.lastMessage = newMessage;
-      await chat.save();
-    }
+    // After editing, recompute chat last message from latest non-deleted message
+    await this.refreshChatLastMessage(
+      message.chatId as mongoose.Types.ObjectId
+    );
 
-    return await message.save();
+    const saved = await message.save();
+    // After deletion, recompute chat last message from latest non-deleted message
+    await this.refreshChatLastMessage(
+      message.chatId as mongoose.Types.ObjectId
+    );
+    return saved;
   }
 
   // Delete message (soft delete)

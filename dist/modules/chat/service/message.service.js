@@ -5,6 +5,23 @@ const message_schema_1 = require("../../../Schema/chat/message.schema");
 const chat_schema_1 = require("../../../Schema/chat/chat.schema");
 const s3_service_1 = require("../../../service/s3.service");
 class MessageService {
+    static async refreshChatLastMessage(chatId) {
+        const latest = await message_schema_1.Message.find({ chatId, deleted: false })
+            .sort({ timestamp: -1 })
+            .limit(1);
+        if (latest.length > 0) {
+            await chat_schema_1.Chat.findByIdAndUpdate(chatId, {
+                lastMessage: latest[0].message,
+                lastMessageAt: latest[0].timestamp,
+            });
+        }
+        else {
+            await chat_schema_1.Chat.findByIdAndUpdate(chatId, {
+                lastMessage: null,
+                lastMessageAt: null,
+            });
+        }
+    }
     static async createMessage(data) {
         const messageId = Math.random().toString(36).substr(2, 9);
         if (data.messageType !== "text" && data.metadata?.file) {
@@ -30,10 +47,7 @@ class MessageService {
             deleted: false,
         });
         const savedMessage = await message.save();
-        await chat_schema_1.Chat.findByIdAndUpdate(data.chatId, {
-            lastMessage: data.message,
-            lastMessageAt: new Date(),
-        });
+        await this.refreshChatLastMessage(data.chatId);
         return savedMessage;
     }
     static async getMessagesByChatId(chatId, page = 1, limit = 50) {
@@ -134,12 +148,10 @@ class MessageService {
         message.edited = true;
         message.isEdited = true;
         message.editedAt = new Date();
-        const chat = await chat_schema_1.Chat.findById(message.chatId);
-        if (chat && chat.lastMessage === message.message) {
-            chat.lastMessage = newMessage;
-            await chat.save();
-        }
-        return await message.save();
+        await this.refreshChatLastMessage(message.chatId);
+        const saved = await message.save();
+        await this.refreshChatLastMessage(message.chatId);
+        return saved;
     }
     static async deleteMessage(messageId, userId) {
         const message = await message_schema_1.Message.findOne({ messageId, senderId: userId });
