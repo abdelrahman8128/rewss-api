@@ -7,7 +7,7 @@ const getCartController = async (req, res) => {
     try {
         const userId = req.user?._id?.toString();
         const cart = await service.getCart(userId);
-        return res.status(200).json(cart);
+        return res.status(200).json({ message: "Cart fetched successfully", cart });
     }
     catch (err) {
         return res

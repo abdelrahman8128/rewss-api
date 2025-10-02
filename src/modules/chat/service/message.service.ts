@@ -235,16 +235,13 @@ export class MessageService {
     message.isEdited = true;
     message.editedAt = new Date();
 
+    const saved = await message.save();
+
     // After editing, recompute chat last message from latest non-deleted message
     await this.refreshChatLastMessage(
       message.chatId as mongoose.Types.ObjectId
     );
 
-    const saved = await message.save();
-    // After deletion, recompute chat last message from latest non-deleted message
-    await this.refreshChatLastMessage(
-      message.chatId as mongoose.Types.ObjectId
-    );
     return saved;
   }
 
@@ -260,7 +257,14 @@ export class MessageService {
     message.deletedAt = new Date();
     message.message = "This message was deleted";
 
-    return await message.save();
+    const savedMessage = await message.save();
+
+    // After deletion, recompute chat last message from latest non-deleted message
+    await this.refreshChatLastMessage(
+      message.chatId as mongoose.Types.ObjectId
+    );
+
+    return savedMessage;
   }
 
   // Get unread messages count for user

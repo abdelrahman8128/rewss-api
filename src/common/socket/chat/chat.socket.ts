@@ -14,7 +14,7 @@ export const chatSocket = (namespace: Namespace) => {
   // Track user -> connected socket ids Map<userId, Set<socketId>>
   const userIdToSockets = new Map<string, Set<string>>();
 
-  namespace.on("connection", (socket: Socket) => {
+  namespace.on("connection", async (socket: Socket) => {
     console.log(`User connected to chat: ${socket.id}`);
     console.log(`Authenticated user:`, socket.data.user);
 
@@ -27,6 +27,14 @@ export const chatSocket = (namespace: Namespace) => {
         userIdToSockets.set(currentUserId, new Set());
       }
       userIdToSockets.get(currentUserId)!.add(socket.id);
+
+      // Send unread message count when user connects
+      try {
+        const unreadCount = await MessageService.getUnreadCount(currentUserId);
+        socket.emit("unreadCount", { count: unreadCount });
+      } catch (error) {
+        console.error("Error getting unread count:", error);
+      }
     }
 
     // Handle room joining
@@ -154,7 +162,7 @@ export const chatSocket = (namespace: Namespace) => {
             metadata,
           });
 
-          // Broadcast message
+          // Broadcast message to users in the room
           namespace.to(roomId).emit("message", {
             senderId: message.senderId,
             message: message.message,
@@ -167,10 +175,13 @@ export const chatSocket = (namespace: Namespace) => {
             readBy: message.readBy,
           });
 
-          // Check participants
-          const participants = roomParticipants.get(roomId);
-          if (participants) {
-            for (const userId of participants) {
+          // Get chat participants from database
+          const chatParticipants = chat.participants;
+          const roomActiveParticipants = roomParticipants.get(roomId);
+
+          // Handle participants who are in the room (mark as read)
+          if (roomActiveParticipants) {
+            for (const userId of roomActiveParticipants) {
               if (userId !== senderId) {
                 // المستقبل فاتح الروم فعلاً → اعتبرها Seen
                 const readMessage = await MessageService.markAsRead(
@@ -184,16 +195,44 @@ export const chatSocket = (namespace: Namespace) => {
                 });
               }
             }
-          } else {
-            // المستقبل مش في الروم → Delivered فقط
-            const deliveredMessage = await MessageService.markAsDelivered(
-              message.messageId,
-              receiverId
-            );
-            socket.emit("messageDelivered", {
-              messageId: deliveredMessage?.messageId,
-              deliveredTo: receiverId,
-            });
+          }
+
+          // Handle participants who are connected but not in the room (send notification)
+          for (const participantId of chatParticipants) {
+            if (participantId !== senderId) {
+              // Check if user is connected to socket but not in the room
+              const userSockets = userIdToSockets.get(participantId);
+              const isInRoom = roomActiveParticipants?.has(participantId);
+
+              if (userSockets && userSockets.size > 0 && !isInRoom) {
+                // User is connected but not in room - send notification
+                for (const socketId of userSockets) {
+                  namespace.to(socketId).emit("messageNotification", {
+                    senderId: message.senderId,
+                    message: message.message,
+                    roomId,
+                    timestamp: message.timestamp.toISOString(),
+                    messageId: message.messageId,
+                    messageType: message.messageType,
+                    chatId: chat._id,
+                    senderName: socket.data.user?.name || "Unknown", // Add sender name if available
+                  });
+                }
+
+                // Mark as delivered since user is connected
+                const deliveredMessage = await MessageService.markAsDelivered(
+                  message.messageId,
+                  participantId
+                );
+                socket.emit("messageDelivered", {
+                  messageId: deliveredMessage?.messageId,
+                  deliveredTo: participantId,
+                });
+              } else if (!userSockets || userSockets.size === 0) {
+                // User is not connected at all - just mark as delivered when they come online
+                // This will be handled when they connect and join the room
+              }
+            }
           }
         } catch (error) {
           socket.emit("messageError", {
@@ -402,6 +441,44 @@ export const chatSocket = (namespace: Namespace) => {
           roomId: currentRoomId,
           participants: participants ? Array.from(participants) : [],
         });
+      }
+    });
+
+    // Handle getting unread messages for user
+    socket.on("getUnreadMessages", async () => {
+      const userId = socket.data.user?.id;
+      if (!userId) return;
+
+      try {
+        // Get all chats where user is a participant
+        const userChats = await Chat.find({ participants: userId });
+        const unreadMessages = [];
+
+        for (const chat of userChats) {
+          // Get latest unread message from each chat
+          const latestUnread = await Message.findOne({
+            chatId: chat._id,
+            senderId: { $ne: userId },
+            deleted: false,
+            readBy: { $not: { $elemMatch: { userId } } },
+          }).sort({ timestamp: -1 });
+
+          if (latestUnread) {
+            unreadMessages.push({
+              chatId: chat._id,
+              roomId: chat.roomId,
+              senderId: latestUnread.senderId,
+              message: latestUnread.message,
+              messageType: latestUnread.messageType,
+              timestamp: latestUnread.timestamp.toISOString(),
+              messageId: latestUnread.messageId,
+            });
+          }
+        }
+
+        socket.emit("unreadMessages", { messages: unreadMessages });
+      } catch (error) {
+        socket.emit("error", { message: "Failed to fetch unread messages" });
       }
     });
 

@@ -11,7 +11,9 @@ const getCartBySellerController = async (req, res) => {
             return res.status(400).json({ message: "sellerId is required" });
         }
         const cart = await cartService.getCartBySeller(userId, String(sellerId));
-        return res.status(200).json({ cart });
+        return res
+            .status(200)
+            .json({ message: "Cart by seller fetched successfully", cart });
     }
     catch (error) {
         return res

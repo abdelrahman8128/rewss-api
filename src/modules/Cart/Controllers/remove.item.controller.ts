@@ -14,7 +14,7 @@ export const removeItemFromCartController = async (
     if (!adId) return res.status(400).json({ message: "adId is required" });
 
     const cart = await service.removeItem(userId, adId);
-    return res.status(200).json(cart);
+    return res.status(200).json({ message: "Item removed from cart", cart });
   } catch (err: any) {
     const message = err?.message || "Failed to remove item from cart";
     const status = message.includes("not found") ? 404 : 400;

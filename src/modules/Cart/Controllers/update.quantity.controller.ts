@@ -18,7 +18,7 @@ export const updateCartItemQuantityController = async (
     }
 
     const cart = await service.updateItemQuantity(userId, adId, qty);
-    return res.status(200).json(cart);
+    return res.status(200).json({ message: "Cart item quantity updated", cart });
   } catch (err: any) {
     const message = err?.message || "Failed to update item quantity";
     const status = message.includes("not found") ? 404 : 400;

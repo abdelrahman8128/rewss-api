@@ -148,7 +148,6 @@ class MessageService {
         message.edited = true;
         message.isEdited = true;
         message.editedAt = new Date();
-        await this.refreshChatLastMessage(message.chatId);
         const saved = await message.save();
         await this.refreshChatLastMessage(message.chatId);
         return saved;
@@ -160,7 +159,9 @@ class MessageService {
         message.deleted = true;
         message.deletedAt = new Date();
         message.message = "This message was deleted";
-        return await message.save();
+        const savedMessage = await message.save();
+        await this.refreshChatLastMessage(message.chatId);
+        return savedMessage;
     }
     static async getUnreadCount(userId) {
         const userChats = await chat_schema_1.Chat.find({ participants: userId }).select("_id");

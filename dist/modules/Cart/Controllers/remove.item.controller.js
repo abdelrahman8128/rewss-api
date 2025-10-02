@@ -10,7 +10,7 @@ const removeItemFromCartController = async (req, res) => {
         if (!adId)
             return res.status(400).json({ message: "adId is required" });
         const cart = await service.removeItem(userId, adId);
-        return res.status(200).json(cart);
+        return res.status(200).json({ message: "Item removed from cart", cart });
     }
     catch (err) {
         const message = err?.message || "Failed to remove item from cart";

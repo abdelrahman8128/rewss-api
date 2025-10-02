@@ -16,7 +16,9 @@ export const getCartBySellerController = async (
     }
 
     const cart = await cartService.getCartBySeller(userId, String(sellerId));
-    return res.status(200).json({ cart });
+    return res
+      .status(200)
+      .json({ message: "Cart by seller fetched successfully", cart });
   } catch (error: any) {
     return res
       .status(400)

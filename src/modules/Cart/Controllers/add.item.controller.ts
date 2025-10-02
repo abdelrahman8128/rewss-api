@@ -17,7 +17,7 @@ export const addItemToCartController = async (req: Request, res: Response) => {
     }
 
     const cart = await service.addItem(userId, adId, qty);
-    return res.status(200).json(cart);
+    return res.status(200).json({ message: "Item added to cart", cart });
   } catch (err: any) {
     const message = err?.message || "Failed to add item to cart";
     const status =

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.chatSocket = void 0;
 const chat_schema_1 = require("../../../Schema/chat/chat.schema");
+const message_schema_1 = require("../../../Schema/chat/message.schema");
 const message_service_1 = require("../../../modules/chat/service/message.service");
 const mongoose_1 = __importDefault(require("mongoose"));
 function getPrivateRoomId(userA, userB) {
@@ -13,7 +14,7 @@ function getPrivateRoomId(userA, userB) {
 const chatSocket = (namespace) => {
     const roomParticipants = new Map();
     const userIdToSockets = new Map();
-    namespace.on("connection", (socket) => {
+    namespace.on("connection", async (socket) => {
         console.log(`User connected to chat: ${socket.id}`);
         console.log(`Authenticated user:`, socket.data.user);
         let currentRoomId = null;
@@ -23,6 +24,13 @@ const chatSocket = (namespace) => {
                 userIdToSockets.set(currentUserId, new Set());
             }
             userIdToSockets.get(currentUserId).add(socket.id);
+            try {
+                const unreadCount = await message_service_1.MessageService.getUnreadCount(currentUserId);
+                socket.emit("unreadCount", { count: unreadCount });
+            }
+            catch (error) {
+                console.error("Error getting unread count:", error);
+            }
         }
         socket.on("joinRoom", async (data) => {
             const senderId = socket.data.user?.id;
@@ -118,9 +126,10 @@ const chatSocket = (namespace) => {
                     metadata: message.metadata,
                     readBy: message.readBy,
                 });
-                const participants = roomParticipants.get(roomId);
-                if (participants) {
-                    for (const userId of participants) {
+                const chatParticipants = chat.participants;
+                const roomActiveParticipants = roomParticipants.get(roomId);
+                if (roomActiveParticipants) {
+                    for (const userId of roomActiveParticipants) {
                         if (userId !== senderId) {
                             const readMessage = await message_service_1.MessageService.markAsRead(message.messageId, userId);
                             socket.emit("messageRead", {
@@ -131,12 +140,32 @@ const chatSocket = (namespace) => {
                         }
                     }
                 }
-                else {
-                    const deliveredMessage = await message_service_1.MessageService.markAsDelivered(message.messageId, receiverId);
-                    socket.emit("messageDelivered", {
-                        messageId: deliveredMessage?.messageId,
-                        deliveredTo: receiverId,
-                    });
+                for (const participantId of chatParticipants) {
+                    if (participantId !== senderId) {
+                        const userSockets = userIdToSockets.get(participantId);
+                        const isInRoom = roomActiveParticipants?.has(participantId);
+                        if (userSockets && userSockets.size > 0 && !isInRoom) {
+                            for (const socketId of userSockets) {
+                                namespace.to(socketId).emit("messageNotification", {
+                                    senderId: message.senderId,
+                                    message: message.message,
+                                    roomId,
+                                    timestamp: message.timestamp.toISOString(),
+                                    messageId: message.messageId,
+                                    messageType: message.messageType,
+                                    chatId: chat._id,
+                                    senderName: socket.data.user?.name || "Unknown",
+                                });
+                            }
+                            const deliveredMessage = await message_service_1.MessageService.markAsDelivered(message.messageId, participantId);
+                            socket.emit("messageDelivered", {
+                                messageId: deliveredMessage?.messageId,
+                                deliveredTo: participantId,
+                            });
+                        }
+                        else if (!userSockets || userSockets.size === 0) {
+                        }
+                    }
                 }
             }
             catch (error) {
@@ -287,6 +316,38 @@ const chatSocket = (namespace) => {
                     roomId: currentRoomId,
                     participants: participants ? Array.from(participants) : [],
                 });
+            }
+        });
+        socket.on("getUnreadMessages", async () => {
+            const userId = socket.data.user?.id;
+            if (!userId)
+                return;
+            try {
+                const userChats = await chat_schema_1.Chat.find({ participants: userId });
+                const unreadMessages = [];
+                for (const chat of userChats) {
+                    const latestUnread = await message_schema_1.Message.findOne({
+                        chatId: chat._id,
+                        senderId: { $ne: userId },
+                        deleted: false,
+                        readBy: { $not: { $elemMatch: { userId } } },
+                    }).sort({ timestamp: -1 });
+                    if (latestUnread) {
+                        unreadMessages.push({
+                            chatId: chat._id,
+                            roomId: chat.roomId,
+                            senderId: latestUnread.senderId,
+                            message: latestUnread.message,
+                            messageType: latestUnread.messageType,
+                            timestamp: latestUnread.timestamp.toISOString(),
+                            messageId: latestUnread.messageId,
+                        });
+                    }
+                }
+                socket.emit("unreadMessages", { messages: unreadMessages });
+            }
+            catch (error) {
+                socket.emit("error", { message: "Failed to fetch unread messages" });
             }
         });
         socket.on("ping", (data) => {
