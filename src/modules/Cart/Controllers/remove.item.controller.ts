@@ -9,11 +9,11 @@ export const removeItemFromCartController = async (
 ) => {
   try {
     const userId = req.user?._id?.toString();
-    const { adId } = req.body || {};
+    const { AdId } = req.params || {};
 
-    if (!adId) return res.status(400).json({ message: "adId is required" });
+    if (!AdId) return res.status(400).json({ message: "AdId is required" });
 
-    const cart = await service.removeItem(userId, adId);
+    const cart = await service.removeItem(userId, String(AdId));
     return res.status(200).json({ message: "Item removed from cart", cart });
   } catch (err: any) {
     const message = err?.message || "Failed to remove item from cart";

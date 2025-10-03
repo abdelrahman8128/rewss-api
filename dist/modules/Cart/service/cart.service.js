@@ -66,19 +66,54 @@ class CartService {
     async getCart(userId) {
         const cart = await cart_schema_1.Cart.findOne({ userId })
             .sort({ updatedAt: -1 })
-            .populate("items.productId sellerId");
+            .populate([
+            {
+                path: "items.productId",
+                select: "title price thumbnail status stockStatus",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            { path: "sellerId", select: "name email logo avatar" },
+        ]);
         return cart;
     }
     async listCarts(userId) {
         const carts = await cart_schema_1.Cart.find({ userId })
             .sort({ updatedAt: -1 })
-            .populate("items.productId sellerId");
+            .populate([
+            {
+                path: "items.productId",
+                select: "thumbnail status stockStatus price",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            {
+                path: "sellerId",
+                select: "name email logo avatar",
+            },
+        ]);
         return carts;
     }
     async getCartBySeller(userId, sellerId) {
         const cart = await cart_schema_1.Cart.findOne({ userId, sellerId })
             .sort({ updatedAt: -1 })
-            .populate("items.productId sellerId");
+            .populate([
+            {
+                path: "items.productId",
+                select: "thumbnail status stockStatus price",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            { path: "sellerId", select: "name email logo avatar" },
+        ]);
+        return cart;
+    }
+    async getCartById(userId, cartId) {
+        const cart = await cart_schema_1.Cart.findOne({ _id: cartId, userId }).populate([
+            {
+                path: "items.productId",
+                select: "thumbnail status stockStatus price",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            { path: "sellerId", select: "name email logo avatar" },
+        ]);
         return cart;
     }
     async updateCart(cart) {
@@ -88,7 +123,14 @@ class CartService {
         }
         const updatedCart = await cart_schema_1.Cart.findOneAndUpdate({ userId: cart.userId }, cart, {
             new: true,
-        }).populate("items.productId sellerId");
+        }).populate([
+            {
+                path: "items.productId",
+                select: "thumbnail status stockStatus price",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            { path: "sellerId", select: "name email logo avatar" },
+        ]);
         return updatedCart;
     }
     async deleteCart(userId) {
@@ -135,7 +177,7 @@ class CartService {
             : { userId, sellerId };
         const updated = await cart_schema_1.Cart.findOneAndUpdate(filter, update, {
             new: true,
-        }).populate("items.productId sellerId");
+        });
         return updated;
     }
     async updateItemQuantity(userId, adId, quantity) {
@@ -152,7 +194,17 @@ class CartService {
         if (!cart) {
             throw new Error("Cart item not found");
         }
-        const updated = await cart_schema_1.Cart.findOneAndUpdate({ userId, sellerId, "items.productId": ad._id }, { $set: { "items.$.quantity": quantity } }, { new: true }).populate("items.productId sellerId");
+        const updated = await cart_schema_1.Cart.findOneAndUpdate({ userId, sellerId, "items.productId": ad._id }, { $set: { "items.$.quantity": quantity } }, { new: true }).populate([
+            {
+                path: "items.productId",
+                select: "thumbnail status stockStatus price",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            {
+                path: "sellerId",
+                select: "name email logo avatar",
+            },
+        ]);
         return updated;
     }
     async removeItem(userId, adId) {
@@ -161,7 +213,17 @@ class CartService {
             throw new Error("Product not found");
         }
         const sellerId = ad.userId;
-        const updated = await cart_schema_1.Cart.findOneAndUpdate({ userId, sellerId }, { $pull: { items: { productId: ad._id } } }, { new: true }).populate("items.productId sellerId");
+        const updated = await cart_schema_1.Cart.findOneAndUpdate({ userId, sellerId }, { $pull: { items: { productId: ad._id } } }, { new: true }).populate([
+            {
+                path: "items.productId",
+                select: "thumbnail status stockStatus price",
+                populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+            },
+            {
+                path: "sellerId",
+                select: "name email logo avatar",
+            },
+        ]);
         if (!updated) {
             throw new Error("Cart not found");
         }

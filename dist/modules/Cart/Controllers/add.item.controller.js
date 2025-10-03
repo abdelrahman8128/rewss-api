@@ -15,8 +15,8 @@ const addItemToCartController = async (req, res) => {
         if (!Number.isFinite(qty) || qty < 1) {
             return res.status(400).json({ message: "quantity must be >= 1" });
         }
-        const cart = await service.addItem(userId, adId, qty);
-        return res.status(200).json({ message: "Item added to cart", cart });
+        await service.addItem(userId, adId, qty);
+        return res.status(200).json({ message: "Item added to cart" });
     }
     catch (err) {
         const message = err?.message || "Failed to add item to cart";

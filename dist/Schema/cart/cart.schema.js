@@ -30,27 +30,6 @@ CartSchema.virtual("totalCost").get(function () {
         return total;
     }, 0);
 });
-CartSchema.pre("find", async function (next) {
-    this.populate({
-        path: "items.productId",
-        select: "title price thumbnail status stockStatus",
-    });
-    next();
-});
-CartSchema.pre("findOne", async function (next) {
-    this.populate({
-        path: "items.productId",
-        select: "title price thumbnail status stockStatus",
-    });
-    next();
-});
-CartSchema.pre("findOneAndUpdate", async function (next) {
-    this.populate({
-        path: "items.productId",
-        select: "title price thumbnail status stockStatus",
-    });
-    next();
-});
 CartSchema.post("find", function (docs, next) {
     if (!docs)
         return next();

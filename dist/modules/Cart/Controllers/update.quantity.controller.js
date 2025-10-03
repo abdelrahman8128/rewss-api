@@ -14,7 +14,9 @@ const updateCartItemQuantityController = async (req, res) => {
             return res.status(400).json({ message: "quantity must be >= 1" });
         }
         const cart = await service.updateItemQuantity(userId, adId, qty);
-        return res.status(200).json({ message: "Cart item quantity updated", cart });
+        return res
+            .status(200)
+            .json({ message: "Cart item quantity updated", cart });
     }
     catch (err) {
         const message = err?.message || "Failed to update item quantity";

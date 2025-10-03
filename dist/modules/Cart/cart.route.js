@@ -5,10 +5,11 @@ const authrization_middleware_1 = require("../../Middleware/authrization/authriz
 const cart_controller_1 = require("./cart.controller");
 const router = (0, express_1.Router)();
 router.get("/", authrization_middleware_1.authMiddleware, cart_controller_1.listCartsController);
-router.get("/latest", authrization_middleware_1.authMiddleware, cart_controller_1.getCartController);
+router.get("/latest", authrization_middleware_1.authMiddleware, cart_controller_1.getLastCartController);
 router.get("/by-seller", authrization_middleware_1.authMiddleware, cart_controller_1.getCartBySellerController);
+router.get(":id", authrization_middleware_1.authMiddleware, cart_controller_1.getCartByIdController);
 router.post("/item", authrization_middleware_1.authMiddleware, cart_controller_1.addItemToCartController);
 router.patch("/item", authrization_middleware_1.authMiddleware, cart_controller_1.updateCartItemQuantityController);
-router.delete("/item", authrization_middleware_1.authMiddleware, cart_controller_1.removeItemFromCartController);
+router.delete("/item/:AdId", authrization_middleware_1.authMiddleware, cart_controller_1.removeItemFromCartController);
 router.delete("/by-seller", authrization_middleware_1.authMiddleware, cart_controller_1.deleteCartBySellerController);
 exports.default = router;

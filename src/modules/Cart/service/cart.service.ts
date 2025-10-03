@@ -38,6 +38,7 @@ export class CartService {
 
     return ad;
   }
+
   async createCart(userId: string, cart: ICart) {
     // Validate that the user exists
     const user = await User.findById(userId);
@@ -75,23 +76,62 @@ export class CartService {
   async getCart(userId: string) {
     const cart = await Cart.findOne({ userId })
       .sort({ updatedAt: -1 })
-      .populate("items.productId sellerId");
+      .populate([
+        {
+          path: "items.productId",
+          select: "title price thumbnail status stockStatus",
+          populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+        },
+        { path: "sellerId", select: "name email logo avatar" },
+      ]);
     return cart;
   }
+
   async listCarts(userId: string) {
     const carts = await Cart.find({ userId })
       .sort({ updatedAt: -1 })
-      .populate("items.productId sellerId");
+      .populate([
+        {
+          path: "items.productId",
+          select: "thumbnail status stockStatus price",
+          populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+        },
+        {
+          path: "sellerId",
+          select: "name email logo avatar",
+        },
+      ]);
     return carts;
   }
+
   async getCartBySeller(userId: string, sellerId: string) {
     const cart = await Cart.findOne({ userId, sellerId })
       .sort({ updatedAt: -1 })
-      .populate("items.productId sellerId");
+      .populate([
+        {
+          path: "items.productId",
+          select: "thumbnail status stockStatus price",
+          populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+        },
+        { path: "sellerId", select: "name email logo avatar" },
+      ]);
+    return cart;
+  }
+
+  async getCartById(userId: string, cartId: string) {
+    const cart = await Cart.findOne({ _id: cartId, userId }).populate([
+      {
+        path: "items.productId",
+        select: "thumbnail status stockStatus price",
+        populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+      },
+      { path: "sellerId", select: "name email logo avatar" },
+    ]);
     return cart;
   }
   async updateCart(cart: ICart) {
     // Check if cart exists before updating
+
     const existingCart = await Cart.findOne({ userId: cart.userId });
     if (!existingCart) {
       throw new Error("Cart not found");
@@ -103,7 +143,14 @@ export class CartService {
       {
         new: true,
       }
-    ).populate("items.productId sellerId");
+    ).populate([
+      {
+        path: "items.productId",
+        select: "thumbnail status stockStatus price",
+        populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+      },
+      { path: "sellerId", select: "name email logo avatar" },
+    ]);
     return updatedCart;
   }
   async deleteCart(userId: string) {
@@ -166,7 +213,7 @@ export class CartService {
 
     const updated = await Cart.findOneAndUpdate(filter, update, {
       new: true,
-    }).populate("items.productId sellerId");
+    });
     return updated as any;
   }
 
@@ -191,7 +238,17 @@ export class CartService {
       { userId, sellerId, "items.productId": ad._id },
       { $set: { "items.$.quantity": quantity } },
       { new: true }
-    ).populate("items.productId sellerId");
+    ).populate([
+      {
+        path: "items.productId",
+        select: "thumbnail status stockStatus price",
+        populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+      },
+      {
+        path: "sellerId",
+        select: "name email logo avatar",
+      },
+    ]);
 
     return updated as any;
   }
@@ -207,7 +264,17 @@ export class CartService {
       { userId, sellerId },
       { $pull: { items: { productId: ad._id } } },
       { new: true }
-    ).populate("items.productId sellerId");
+    ).populate([
+      {
+        path: "items.productId",
+        select: "thumbnail status stockStatus price",
+        populate: { path: "thumbnail", model: "AdImage", select: "imageUrl" },
+      },
+      {
+        path: "sellerId",
+        select: "name email logo avatar",
+      },
+    ]);
 
     if (!updated) {
       throw new Error("Cart not found");

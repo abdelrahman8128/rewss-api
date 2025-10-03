@@ -15,8 +15,12 @@ export const deleteCartBySellerController = async (
       return res.status(400).json({ message: "sellerId is required" });
     }
 
+
     await cartService.deleteCartBySeller(userId, String(sellerId));
+    
     return res.status(200).json({ message: "Cart deleted" });
+
+  
   } catch (error: any) {
     return res
       .status(400)

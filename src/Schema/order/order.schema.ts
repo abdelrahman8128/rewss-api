@@ -1,18 +1,36 @@
-import { model, Schema } from "mongoose";
+import { Schema } from "mongoose";
 
+export type IOrderItem = {
+  productId: Schema.Types.ObjectId;
+  quantity: number;
+  price: number;
+  total: number;
+};
 
-export interface IOrder extends Document {
+export type IOrder = Document & {
   userId: Schema.Types.ObjectId;
   sellerId: Schema.Types.ObjectId;
-  items: Schema.Types.ObjectId[];
-  totalCost?: number; // Virtual field for calculated total
-}
+  createdAt: Date;
+  updatedAt: Date;
+  status:
+    | "pending"
+    | "confirmed"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded"
+    | "failed";
+  paymentStatus: "pending" | "paid" | "failed";
+  paymentMethod: "cash" | "bank" | "mobile_money" | "card";
+  paymentId?: string;
+  paymentAmount: number;
+  paymentCurrency: string;
 
-const OrderSchema = new Schema<IOrder>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  items: { type: [Schema.Types.ObjectId], ref: "Ad", required: true },
-  totalCost: { type: Number, required: true },
-});
+  VAT?: number;
+  subTotal?: number;
+  total?: number;
+  shippingCost?: number;
+  tax?: number;
 
-export default model<IOrder>("Order", OrderSchema);
+  items: IOrderItem[];
+};

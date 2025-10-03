@@ -51,32 +51,6 @@ CartSchema.virtual("totalCost").get(function () {
   }, 0);
 });
 
-// Pre-hook for find operations
-CartSchema.pre("find", async function (this: any, next: any) {
-  this.populate({
-    path: "items.productId",
-    select: "title price thumbnail status stockStatus",
-  });
-  next();
-});
-
-// Pre-hook for findOne operations
-CartSchema.pre("findOne", async function (this: any, next: any) {
-  this.populate({
-    path: "items.productId",
-    select: "title price thumbnail status stockStatus",
-  });
-  next();
-});
-
-// Pre-hook for findOneAndUpdate operations
-CartSchema.pre("findOneAndUpdate", async function (this: any, next: any) {
-  this.populate({
-    path: "items.productId",
-    select: "title price thumbnail status stockStatus",
-  });
-  next();
-});
 
 // Post-hook to calculate and add total cost after find operations
 CartSchema.post("find", function (docs: any, next: any) {
