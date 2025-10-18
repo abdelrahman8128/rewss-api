@@ -19,6 +19,10 @@ export type IAd = Document & {
   stockStatus: "available" | "out_of_stock" | "low_stock";
   status: "active" | "pending" | "deleted";
   price: number;
+  rating?: {
+    averageRating: number;
+    totalRatings: number;
+  };
   createdAt?: Date; // Optional field for creation timestamp
   updatedAt?: Date; // Optional field for last update timestamp
 };
@@ -116,6 +120,19 @@ const AdSchema = new Schema<IAd>(
       required: [true, "Ad price is required"],
       min: [0, "Price cannot be negative"],
       index: true, // Index for faster search
+    },
+    rating: {
+      averageRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
+      },
+      totalRatings: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
     },
   },
   {

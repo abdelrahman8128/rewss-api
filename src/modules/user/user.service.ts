@@ -8,8 +8,16 @@ import AdImageSchema from "Schema/AdImage/Ad.image.schema";
 import asyncHandler from "express-async-handler";
 import sharp from "sharp";
 import { CreateSellerPhysicalAddressDto } from "./DTO/seller-physical-address.dto";
+import { RatingService } from "../Rating/rating.service";
 
 export class UserService {
+  private ratingService: RatingService;
+
+  constructor() {
+    // Note: RatingService will be injected properly when using NestJS
+    this.ratingService = new RatingService();
+  }
+
   // Get user data
   async getUserData(
     userId: string,
@@ -25,7 +33,10 @@ export class UserService {
     }
 
     if (user.role === "seller") {
-      return user as ISeller;
+      return {
+        ...user.toObject(),
+        rating: (user as any).rating || { averageRating: 0, totalRatings: 0 },
+      } as ISeller;
     }
 
     return user;
@@ -212,8 +223,19 @@ export class UserService {
       User.countDocuments(filter),
     ]);
 
+    // Add cached rating data for sellers
+    const usersWithRatings = users.map((user) => {
+      if (user.role === "seller") {
+        return {
+          ...user.toObject(),
+          rating: (user as any).rating || { averageRating: 0, totalRatings: 0 },
+        };
+      }
+      return user.toObject();
+    });
+
     return {
-      users,
+      users: usersWithRatings as any,
       page: pageNumber,
       limit: pageSize,
       total,

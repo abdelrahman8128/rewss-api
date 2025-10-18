@@ -45,9 +45,11 @@ const Ad_image_schema_1 = __importDefault(require("../../Schema/AdImage/Ad.image
 const model_schema_1 = __importDefault(require("../../Schema/Model/model.schema"));
 const mongoose_1 = require("mongoose");
 const stock_service_1 = __importDefault(require("../Stock/service/stock.service"));
+const rating_service_1 = require("../Rating/rating.service");
 class AdService {
     constructor() {
         this.stockService = new stock_service_1.default();
+        this.ratingService = new rating_service_1.RatingService();
     }
     async list(req) {
         let { search, model, year, seller, stockStatus, condition, category, minPrice, maxPrice, sortBy = "date", sortOrder = "desc", page = 1, limit = 20, status, } = req.query || {};
@@ -131,8 +133,14 @@ class AdService {
                 .limit(pageSize),
             ad_schema_1.default.countDocuments(filter),
         ]);
+        const itemsWithRatings = items.map((ad) => {
+            return {
+                ...ad.toObject(),
+                rating: ad.rating || { averageRating: 0, totalRatings: 0 },
+            };
+        });
         return {
-            items,
+            items: itemsWithRatings,
             page: pageNumber,
             limit: pageSize,
             total,
@@ -388,7 +396,11 @@ class AdService {
         if (!ad) {
             throw new Error("Ad not found");
         }
-        return ad;
+        const adWithRating = {
+            ...ad.toObject(),
+            rating: ad.rating || { averageRating: 0, totalRatings: 0 },
+        };
+        return adWithRating;
     }
     async verifyModels(models) {
         if (!models || models.length === 0) {

@@ -106,6 +106,19 @@ const SellerSchema = new mongoose_1.Schema({
         enum: ["uncompleted", "pending", "approved", "rejected"],
         default: "uncompleted",
     },
+    rating: {
+        averageRating: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 5,
+        },
+        totalRatings: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+    },
 });
 SellerSchema.pre("save", function (next) {
     if (this.role !== "seller") {

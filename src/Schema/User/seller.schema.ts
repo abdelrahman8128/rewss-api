@@ -27,6 +27,10 @@ export interface ISeller extends IUser {
     imageUrl: string;
   }[]; // array of photo URLs
   requiredDataStatus: "uncompleted" | "pending" | "approved" | "rejected";
+  rating?: {
+    averageRating: number;
+    totalRatings: number;
+  };
 }
 
 const SellerSchema = new Schema<ISeller>({
@@ -130,6 +134,19 @@ const SellerSchema = new Schema<ISeller>({
     type: String,
     enum: ["uncompleted", "pending", "approved", "rejected"],
     default: "uncompleted",
+  },
+  rating: {
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    totalRatings: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
 });
 

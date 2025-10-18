@@ -10,7 +10,11 @@ const mongoose_1 = require("mongoose");
 const seller_schema_1 = __importDefault(require("../../Schema/User/seller.schema"));
 const s3_service_1 = require("../../service/s3.service");
 const sharp_1 = __importDefault(require("sharp"));
+const rating_service_1 = require("../Rating/rating.service");
 class UserService {
+    constructor() {
+        this.ratingService = new rating_service_1.RatingService();
+    }
     async getUserData(userId, includePassword = false) {
         const selectFields = includePassword ? "password" : "";
         const user = (await user_schema_1.default.findById(userId).select(selectFields));
@@ -18,7 +22,10 @@ class UserService {
             throw new Error("User not found");
         }
         if (user.role === "seller") {
-            return user;
+            return {
+                ...user.toObject(),
+                rating: user.rating || { averageRating: 0, totalRatings: 0 },
+            };
         }
         return user;
     }
@@ -126,8 +133,17 @@ class UserService {
                 .limit(pageSize),
             user_schema_1.default.countDocuments(filter),
         ]);
+        const usersWithRatings = users.map((user) => {
+            if (user.role === "seller") {
+                return {
+                    ...user.toObject(),
+                    rating: user.rating || { averageRating: 0, totalRatings: 0 },
+                };
+            }
+            return user.toObject();
+        });
         return {
-            users,
+            users: usersWithRatings,
             page: pageNumber,
             limit: pageSize,
             total,

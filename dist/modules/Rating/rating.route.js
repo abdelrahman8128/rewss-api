@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const rating_controller_1 = require("./rating.controller");
+const router = (0, express_1.Router)();
+const ratingController = new rating_controller_1.RatingController();
+router.post("/", ratingController.createRating.bind(ratingController));
+router.get("/product/:adId", ratingController.getProductRating.bind(ratingController));
+router.get("/seller/:sellerId", ratingController.getSellerRating.bind(ratingController));
+router.get("/ad/:adId", ratingController.getRatingsByAd.bind(ratingController));
+router.get("/seller-ratings/:sellerId", ratingController.getRatingsBySeller.bind(ratingController));
+router.get("/buyer/:buyerId", ratingController.getRatingsByBuyer.bind(ratingController));
+router.put("/:id", ratingController.updateRating.bind(ratingController));
+router.delete("/:id", ratingController.deleteRating.bind(ratingController));
+exports.default = router;

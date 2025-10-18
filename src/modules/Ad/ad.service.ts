@@ -7,12 +7,16 @@ import Model from "../../Schema/Model/model.schema";
 import { IAd } from "../../Schema/Ad/ad.schema";
 import mongoose, { Types } from "mongoose";
 import StockService from "../Stock/service/stock.service";
+import { RatingService } from "../Rating/rating.service";
 
 export class AdService {
   private stockService: StockService;
+  private ratingService: RatingService;
 
   constructor() {
     this.stockService = new StockService();
+    // Note: RatingService will be injected properly when using NestJS
+    this.ratingService = new RatingService();
   }
 
   async list(req: any) {
@@ -123,8 +127,16 @@ export class AdService {
       Ad.countDocuments(filter),
     ]);
 
+    // Add cached rating data to each ad
+    const itemsWithRatings = items.map((ad) => {
+      return {
+        ...ad.toObject(),
+        rating: (ad as any).rating || { averageRating: 0, totalRatings: 0 },
+      };
+    });
+
     return {
-      items,
+      items: itemsWithRatings,
       page: pageNumber,
       limit: pageSize,
       total,
@@ -448,7 +460,13 @@ export class AdService {
       throw new Error("Ad not found");
     }
 
-    return ad;
+    // Add cached rating data to the ad
+    const adWithRating = {
+      ...ad.toObject(),
+      rating: (ad as any).rating || { averageRating: 0, totalRatings: 0 },
+    };
+
+    return adWithRating as any;
   }
 
   private async verifyModels(
